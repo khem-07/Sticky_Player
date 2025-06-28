@@ -77,10 +77,21 @@ body {
   font-family: 'Poppins', Arial, sans-serif;
   font-size: 0.98em;
   opacity: 0.75;
-  text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
   letter-spacing: 0.2px;
+  display: inline-block;
+  max-width: 100%;
+  position: relative;
+  vertical-align: middle;
+}
+#artist-name.marquee {
+  animation: marquee 8s linear infinite;
+  will-change: transform;
+}
+@keyframes marquee {
+  0% { transform: translateX(100%);}
+  100% { transform: translateX(-120%);}
 }
 #toggle-pos-btn {
   background: none;
@@ -202,15 +213,26 @@ async function updateSongInfo() {
 
         songTitleEl.textContent = title || 'No track information';
         artistNameEl.textContent = artist || 'Ramasha Media';
+
+        // Remove marquee first
+        artistNameEl.classList.remove('marquee');
+        // Wait for DOM update, then check overflow
+        setTimeout(() => {
+            if (artistNameEl.scrollWidth > artistNameEl.clientWidth) {
+                artistNameEl.classList.add('marquee');
+            }
+        }, 50);
+
     } catch (e) {
         songTitleEl.textContent = 'No track information';
         artistNameEl.textContent = 'Ramasha Media';
+        artistNameEl.classList.remove('marquee');
         console.warn('Song info fetch failed:', e.message);
     }
 }
 
 updateSongInfo();
-setInterval(updateSongInfo, 10000);
+setInterval(updateSongInfo, 15000); // 15 seconds
 
 // Toggle sticky bar position with Bootstrap chevrons
 togglePosBtn.addEventListener('click', () => {

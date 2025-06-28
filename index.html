@@ -177,7 +177,6 @@ playBtn.addEventListener('click', async () => {
     stopSvg.style.display = 'none';
     loadingSvg.style.display = 'none';
   } else {
-    // Show loading icon immediately
     playSvg.style.display = 'none';
     stopSvg.style.display = 'none';
     loadingSvg.style.display = 'block';
@@ -222,10 +221,13 @@ function applyMarquee() {
       styleSheet.innerText = keyframes;
       document.head.appendChild(styleSheet);
 
-      // Duration: 80px/sec, minimum 6s
-      const duration = Math.max((textWidth + maskWidth) / 80, 6);
+      // Slower speed: 40px/sec, minimum 8s
+      const duration = Math.max((textWidth + maskWidth) / 40, 8);
       artistNameEl.classList.add('marquee');
       artistNameEl.style.animation = `marquee-move ${duration}s linear infinite`;
+    } else {
+      artistNameEl.classList.remove('marquee');
+      artistNameEl.style.animation = '';
     }
   }, 50);
 }
@@ -270,13 +272,11 @@ togglePosBtn.addEventListener('click', () => {
   if (stickyPlayer.classList.contains('bottom')) {
     stickyPlayer.classList.remove('bottom');
     stickyPlayer.classList.add('top');
-    // Chevron down at top
     toggleArrow.classList.remove('bi-chevron-up');
     toggleArrow.classList.add('bi-chevron-down');
   } else {
     stickyPlayer.classList.remove('top');
     stickyPlayer.classList.add('bottom');
-    // Chevron up at bottom
     toggleArrow.classList.remove('bi-chevron-down');
     toggleArrow.classList.add('bi-chevron-up');
   }

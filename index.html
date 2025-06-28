@@ -120,6 +120,13 @@ body {
       <circle cx="19" cy="19" r="17.5" stroke="currentColor" stroke-width="2"/>
       <rect x="14" y="14" width="10" height="10" fill="currentColor"/>
     </svg>
+    <!-- Slim Loading SVG (hidden by default) -->
+    <svg id="loading-svg" viewBox="0 0 38 38" fill="none" style="display:none;">
+      <circle cx="19" cy="19" r="17.5" stroke="currentColor" stroke-width="2" opacity="0.2"/>
+      <circle cx="19" cy="19" r="15" stroke="currentColor" stroke-width="3" stroke-dasharray="25, 20" stroke-linecap="round" fill="none">
+        <animateTransform attributeName="transform" type="rotate" from="0 19 19" to="360 19 19" dur="1s" repeatCount="indefinite"/>
+      </circle>
+    </svg>
   </button>
   <div id="song-info">
     <span id="song-title">Loading...</span>
@@ -137,6 +144,7 @@ const audio = document.getElementById('audio');
 const playBtn = document.getElementById('play-stop-btn');
 const playSvg = document.getElementById('play-svg');
 const stopSvg = document.getElementById('stop-svg');
+const loadingSvg = document.getElementById('loading-svg');
 const songTitleEl = document.getElementById('song-title');
 const artistNameEl = document.getElementById('artist-name');
 const stickyPlayer = document.getElementById('sticky-player');
@@ -144,7 +152,7 @@ const togglePosBtn = document.getElementById('toggle-pos-btn');
 const toggleArrow = document.getElementById('toggle-arrow');
 let isPlaying = false;
 
-// Play/Stop button logic with slim SVG icons
+// Play/Stop button logic with slim SVG icons and loading spinner
 playBtn.addEventListener('click', async () => {
   if (isPlaying) {
     audio.pause();
@@ -152,15 +160,21 @@ playBtn.addEventListener('click', async () => {
     isPlaying = false;
     playSvg.style.display = 'block';
     stopSvg.style.display = 'none';
+    loadingSvg.style.display = 'none';
   } else {
+    // Show loading icon immediately
+    playSvg.style.display = 'none';
+    stopSvg.style.display = 'none';
+    loadingSvg.style.display = 'block';
     audio.src = STREAM_URL;
     try {
       await audio.play();
       isPlaying = true;
-      playSvg.style.display = 'none';
+      loadingSvg.style.display = 'none';
       stopSvg.style.display = 'block';
     } catch (e) {
       isPlaying = false;
+      loadingSvg.style.display = 'none';
       playSvg.style.display = 'block';
       stopSvg.style.display = 'none';
       alert('Unable to play stream.');

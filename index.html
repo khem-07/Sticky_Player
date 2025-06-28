@@ -76,7 +76,7 @@ body {
 .artist-mask {
   display: block;
   position: relative;
-  max-width: 170px; /* Adjust as needed */
+  max-width: 170px;
   overflow: hidden;
   height: 1.2em;
   mask-image: linear-gradient(to right, black 80%, transparent 100%);
@@ -112,6 +112,19 @@ body {
   opacity: 0.7;
   font-weight: 400;
 }
+.debug-info {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: rgba(0,0,0,0.9);
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 11px;
+  max-width: 250px;
+  z-index: 1001;
+  font-family: monospace;
+}
 @media (max-width: 600px) {
   #sticky-player { padding: 8px 8px; }
   #play-stop-btn { font-size: 1.5rem; margin-right: 10px; }
@@ -119,6 +132,7 @@ body {
   #song-title { font-size: 1.05rem; }
   .artist-mask { max-width: 90px; }
   #artist-name { font-size: 0.93em; }
+  .debug-info { display: none; }
 }
 </style>
 </head>
@@ -151,10 +165,22 @@ body {
     <i class="bi bi-chevron-up" id="toggle-arrow"></i>
   </button>
 </div>
+
+<div id="debug-info" class="debug-info" style="display:none;">
+  <div><strong>Debug Info</strong></div>
+  <div>Updates: <span id="update-count">0</span></div>
+  <div>Last: <span id="last-update">-</span></div>
+  <div>Status: <span id="api-status">-</span></div>
+  <div>Raw: <span id="raw-data">-</span></div>
+  <button onclick="debugInfo.style.display='none'" style="margin-top:5px;font-size:10px;">Hide</button>
+</div>
+
 <audio id="audio" preload="none"></audio>
+
 <script>
 const STREAM_URL = "https://listen.ramashamedia.com:8330/stream";
 const SONG_API = "https://listen.ramashamedia.com:8330/currentsong?sid=1";
+
 const audio = document.getElementById('audio');
 const playBtn = document.getElementById('play-stop-btn');
 const playSvg = document.getElementById('play-svg');
@@ -165,9 +191,27 @@ const artistNameEl = document.getElementById('artist-name');
 const stickyPlayer = document.getElementById('sticky-player');
 const togglePosBtn = document.getElementById('toggle-pos-btn');
 const toggleArrow = document.getElementById('toggle-arrow');
-let isPlaying = false;
 
-// Play/Stop button logic with slim SVG icons and loading spinner
+// Debug elements
+const debugInfo = document.getElementById('debug-info');
+const updateCountEl = document.getElementById('update-count');
+const lastUpdateEl = document.getElementById('last-update');
+const apiStatusEl = document.getElementById('api-status');
+const rawDataEl = document.getElementById('raw-data');
+
+let isPlaying = false;
+let updateCount = 0;
+
+// Triple-click to toggle debug
+let clickCount = 0;
+document.addEventListener('click', () => {
+    clickCount++;
+    setTimeout(() => { clickCount = 0; }, 500);
+    if (clickCount === 3) {
+        debugInfo.style.display = debugInfo.style.display === 'none' ? 'block' : 'none';
+    }
+});
+
 playBtn.addEventListener('click', async () => {
   if (isPlaying) {
     audio.pause();
@@ -177,30 +221,36 @@ playBtn.addEventListener('click', async () => {
     stopSvg.style.display = 'none';
     loadingSvg.style.display = 'none';
   } else {
-    playSvg.style.display = 'none';
-    stopSvg.style.display = 'none';
-    loadingSvg.style.display = 'block';
-    audio.src = STREAM_URL;
     try {
+      playSvg.style.display = 'none';
+      stopSvg.style.display = 'none';
+      loadingSvg.style.display = 'block';
+
+      audio.src = STREAM_URL;
+      audio.load();
       await audio.play();
+
       isPlaying = true;
       loadingSvg.style.display = 'none';
       stopSvg.style.display = 'block';
+
+      // ✅ Fetch song info immediately after starting
+      updateSongInfo();
+
     } catch (e) {
       isPlaying = false;
       loadingSvg.style.display = 'none';
       playSvg.style.display = 'block';
       stopSvg.style.display = 'none';
-      alert('Unable to play stream.');
+      alert('Unable to play stream: ' + e.message);
     }
   }
 });
 
-// Dynamic marquee for artist name
 function applyMarquee() {
   artistNameEl.classList.remove('marquee');
   artistNameEl.style.animation = '';
-  // Remove old keyframes if any
+
   const oldStyle = document.getElementById('dynamic-marquee-keyframes');
   if (oldStyle) oldStyle.remove();
 
@@ -208,66 +258,97 @@ function applyMarquee() {
     const mask = artistNameEl.parentElement;
     const textWidth = artistNameEl.scrollWidth;
     const maskWidth = mask.clientWidth;
+
     if (textWidth > maskWidth) {
-      // Create new keyframes
       const keyframes = `
       @keyframes marquee-move {
-        0% { transform: translateX(${maskWidth}px);}
-        100% { transform: translateX(-${textWidth}px);}
+        0% { transform: translateX(${maskWidth}px); }
+        100% { transform: translateX(-${textWidth}px); }
       }`;
+
       const styleSheet = document.createElement("style");
       styleSheet.type = "text/css";
       styleSheet.id = "dynamic-marquee-keyframes";
       styleSheet.innerText = keyframes;
       document.head.appendChild(styleSheet);
 
-      // Slower speed: 40px/sec, minimum 8s
       const duration = Math.max((textWidth + maskWidth) / 40, 8);
       artistNameEl.classList.add('marquee');
       artistNameEl.style.animation = `marquee-move ${duration}s linear infinite`;
-    } else {
-      artistNameEl.classList.remove('marquee');
-      artistNameEl.style.animation = '';
     }
   }, 50);
 }
 
-// Fetch and display song info using CORS proxy
 async function updateSongInfo() {
-    try {
-        const proxyUrl = 'https://api.allorigins.win/get?url=';
-        const targetUrl = encodeURIComponent(SONG_API);
-        const response = await fetch(proxyUrl + targetUrl);
+  updateCount++;
+  updateCountEl.textContent = updateCount;
 
-        if (!response.ok) throw new Error('Failed to fetch');
+  try {
+    apiStatusEl.textContent = 'Fetching...';
 
-        const data = await response.json();
-        const clean = data.contents.trim();
-        let artist = 'Ramasha Media';
-        let title = clean;
+    const proxyUrl = 'https://api.allorigins.win/get?url=';
+    const targetUrl = encodeURIComponent(SONG_API);
+    const response = await fetch(proxyUrl + targetUrl);
 
-        if (clean.includes(' - ')) {
-            [artist, title] = clean.split(' - ', 2);
-        }
+    if (!response.ok) throw new Error('Failed to fetch');
 
-        songTitleEl.textContent = title || 'No track information';
-        artistNameEl.textContent = artist || 'Ramasha Media';
+    const data = await response.json();
+    const clean = data.contents.trim();
 
-        applyMarquee();
+    lastUpdateEl.textContent = new Date().toLocaleTimeString();
+    apiStatusEl.textContent = 'Success';
+    rawDataEl.textContent = clean.substring(0, 30) + '...';
 
-    } catch (e) {
-        songTitleEl.textContent = 'No track information';
-        artistNameEl.textContent = 'Ramasha Media';
-        artistNameEl.classList.remove('marquee');
-        artistNameEl.style.animation = '';
-        console.warn('Song info fetch failed:', e.message);
+    let artist = 'Ramasha Media';
+    let title = clean;
+
+    if (clean.includes(' - ')) {
+      [artist, title] = clean.split(' - ', 2);
     }
+
+    songTitleEl.textContent = title || 'No track information';
+    artistNameEl.textContent = artist || 'Ramasha Media';
+
+    applyMarquee();
+
+  } catch (e) {
+    songTitleEl.textContent = 'No track information';
+    artistNameEl.textContent = 'Ramasha Media';
+    apiStatusEl.textContent = 'Failed: ' + e.message;
+    console.warn('Song info fetch failed:', e.message);
+
+    artistNameEl.classList.remove('marquee');
+    artistNameEl.style.animation = '';
+  }
 }
 
-updateSongInfo();
-setInterval(updateSongInfo, 5000); // 5 seconds for better sync
+// ✅ Added event listener for play to always fetch new song info
+audio.addEventListener('play', updateSongInfo);
 
-// Toggle sticky bar position with Bootstrap chevrons
+audio.addEventListener('ended', () => {
+  isPlaying = false;
+  playSvg.style.display = 'block';
+  stopSvg.style.display = 'none';
+  loadingSvg.style.display = 'none';
+});
+
+audio.addEventListener('pause', () => {
+  if (audio.ended || audio.error) {
+    isPlaying = false;
+    playSvg.style.display = 'block';
+    stopSvg.style.display = 'none';
+    loadingSvg.style.display = 'none';
+  }
+});
+
+audio.addEventListener('error', () => {
+  isPlaying = false;
+  playSvg.style.display = 'block';
+  stopSvg.style.display = 'none';
+  loadingSvg.style.display = 'none';
+});
+
+// Toggle sticky bar position
 togglePosBtn.addEventListener('click', () => {
   if (stickyPlayer.classList.contains('bottom')) {
     stickyPlayer.classList.remove('bottom');
@@ -281,6 +362,11 @@ togglePosBtn.addEventListener('click', () => {
     toggleArrow.classList.add('bi-chevron-up');
   }
 });
+
+// Initial load and interval updates
+updateSongInfo();
+setInterval(updateSongInfo, 10000); // Refresh every 10 seconds
 </script>
+
 </body>
 </html>

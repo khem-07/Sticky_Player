@@ -73,6 +73,15 @@ body {
   letter-spacing: 0.5px;
   line-height: 1.1;
 }
+.artist-mask {
+  display: block;
+  position: relative;
+  max-width: 170px; /* Adjust as needed */
+  overflow: hidden;
+  height: 1.2em;
+  mask-image: linear-gradient(to right, black 80%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
+}
 #artist-name {
   font-family: 'Poppins', Arial, sans-serif;
   font-size: 0.98em;
@@ -81,17 +90,11 @@ body {
   white-space: nowrap;
   letter-spacing: 0.2px;
   display: inline-block;
-  max-width: 100%;
   position: relative;
   vertical-align: middle;
 }
 #artist-name.marquee {
-  animation: marquee 8s linear infinite;
   will-change: transform;
-}
-@keyframes marquee {
-  0% { transform: translateX(100%);}
-  100% { transform: translateX(-120%);}
 }
 #toggle-pos-btn {
   background: none;
@@ -114,6 +117,7 @@ body {
   #play-stop-btn { font-size: 1.5rem; margin-right: 10px; }
   #toggle-pos-btn { font-size: 1.3rem; margin-left: 8px; }
   #song-title { font-size: 1.05rem; }
+  .artist-mask { max-width: 90px; }
   #artist-name { font-size: 0.93em; }
 }
 </style>
@@ -141,7 +145,7 @@ body {
   </button>
   <div id="song-info">
     <span id="song-title">Loading...</span>
-    <span id="artist-name"></span>
+    <span class="artist-mask"><span id="artist-name"></span></span>
   </div>
   <button id="toggle-pos-btn" aria-label="Toggle position">
     <i class="bi bi-chevron-up" id="toggle-arrow"></i>
@@ -193,6 +197,39 @@ playBtn.addEventListener('click', async () => {
   }
 });
 
+// Dynamic marquee for artist name
+function applyMarquee() {
+  artistNameEl.classList.remove('marquee');
+  artistNameEl.style.animation = '';
+  // Remove old keyframes if any
+  const oldStyle = document.getElementById('dynamic-marquee-keyframes');
+  if (oldStyle) oldStyle.remove();
+
+  setTimeout(() => {
+    const mask = artistNameEl.parentElement;
+    const textWidth = artistNameEl.scrollWidth;
+    const maskWidth = mask.clientWidth;
+    if (textWidth > maskWidth) {
+      // Create new keyframes
+      const keyframes = `
+      @keyframes marquee-move {
+        0% { transform: translateX(${maskWidth}px);}
+        100% { transform: translateX(-${textWidth}px);}
+      }`;
+      const styleSheet = document.createElement("style");
+      styleSheet.type = "text/css";
+      styleSheet.id = "dynamic-marquee-keyframes";
+      styleSheet.innerText = keyframes;
+      document.head.appendChild(styleSheet);
+
+      // Duration: 80px/sec, minimum 6s
+      const duration = Math.max((textWidth + maskWidth) / 80, 6);
+      artistNameEl.classList.add('marquee');
+      artistNameEl.style.animation = `marquee-move ${duration}s linear infinite`;
+    }
+  }, 50);
+}
+
 // Fetch and display song info using CORS proxy
 async function updateSongInfo() {
     try {
@@ -214,25 +251,19 @@ async function updateSongInfo() {
         songTitleEl.textContent = title || 'No track information';
         artistNameEl.textContent = artist || 'Ramasha Media';
 
-        // Remove marquee first
-        artistNameEl.classList.remove('marquee');
-        // Wait for DOM update, then check overflow
-        setTimeout(() => {
-            if (artistNameEl.scrollWidth > artistNameEl.clientWidth) {
-                artistNameEl.classList.add('marquee');
-            }
-        }, 50);
+        applyMarquee();
 
     } catch (e) {
         songTitleEl.textContent = 'No track information';
         artistNameEl.textContent = 'Ramasha Media';
         artistNameEl.classList.remove('marquee');
+        artistNameEl.style.animation = '';
         console.warn('Song info fetch failed:', e.message);
     }
 }
 
 updateSongInfo();
-setInterval(updateSongInfo, 15000); // 15 seconds
+setInterval(updateSongInfo, 5000); // 5 seconds for better sync
 
 // Toggle sticky bar position with Bootstrap chevrons
 togglePosBtn.addEventListener('click', () => {

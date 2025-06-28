@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sticky Player</title>
+<!-- Google Fonts: Rancho and Poppins -->
+<link href="https://fonts.googleapis.com/css2?family=Rancho&family=Poppins:wght@400;700&display=swap" rel="stylesheet"/>
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+<style>
+:root {
+  --play-btn-color: #fff;
+  --text-color: #fff;
+  --bg-color: #222;
+}
+body {
+  font-family: 'Poppins', Arial, sans-serif;
+}
+#sticky-player {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg-color);
+  color: var(--text-color);
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  z-index: 1000;
+  box-shadow: 0 0 10px #0002;
+  transition: top 0.3s, bottom 0.3s;
+  font-family: 'Poppins', Arial, sans-serif;
+}
+#sticky-player.top {
+  top: 0;
+  bottom: auto;
+}
+#sticky-player.bottom {
+  bottom: 0;
+  top: auto;
+}
+#play-stop-btn {
+  background: none;
+  border: none;
+  color: var(--play-btn-color);
+  font-size: 2.2rem;
+  margin-right: 16px;
+  cursor: pointer;
+  outline: none;
+  display: flex;
+  align-items: center;
+}
+#play-stop-btn svg {
+  width: 3.2rem;
+  height: 3.2rem;
+  display: block;
+}
+#song-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+#song-title {
+  font-family: 'Rancho', cursive;
+  font-weight: 400;
+  font-size: 1.3rem;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+  line-height: 1.1;
+}
+#artist-name {
+  font-family: 'Poppins', Arial, sans-serif;
+  font-size: 0.98em;
+  opacity: 0.75;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+#toggle-pos-btn {
+  background: none;
+  border: none;
+  color: var(--play-btn-color);
+  font-size: 1.7rem;
+  margin-left: 16px;
+  cursor: pointer;
+  outline: none;
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s;
+}
+#toggle-arrow {
+  opacity: 0.7;
+  font-weight: 400;
+}
+@media (max-width: 600px) {
+  #sticky-player { padding: 8px 8px; }
+  #play-stop-btn { font-size: 1.5rem; margin-right: 10px; }
+  #toggle-pos-btn { font-size: 1.3rem; margin-left: 8px; }
+  #song-title { font-size: 1.05rem; }
+  #artist-name { font-size: 0.93em; }
+}
+</style>
+</head>
+<body>
+<div id="sticky-player" class="bottom">
+  <button id="play-stop-btn" aria-label="Play">
+    <!-- Slim Play SVG (visible by default) -->
+    <svg id="play-svg" viewBox="0 0 38 38" fill="none">
+      <circle cx="19" cy="19" r="17.5" stroke="currentColor" stroke-width="2"/>
+      <polygon points="15,12 28,19 15,26" fill="currentColor"/>
+    </svg>
+    <!-- Slim Stop SVG (hidden by default) -->
+    <svg id="stop-svg" viewBox="0 0 38 38" fill="none" style="display:none;">
+      <circle cx="19" cy="19" r="17.5" stroke="currentColor" stroke-width="2"/>
+      <rect x="14" y="14" width="10" height="10" fill="currentColor"/>
+    </svg>
+  </button>
+  <div id="song-info">
+    <span id="song-title">Loading...</span>
+    <span id="artist-name"></span>
+  </div>
+  <button id="toggle-pos-btn" aria-label="Toggle position">
+    <i class="bi bi-chevron-up" id="toggle-arrow"></i>
+  </button>
+</div>
+<audio id="audio" preload="none"></audio>
+<script>
+const STREAM_URL = "https://listen.ramashamedia.com:8330/stream";
+const SONG_API = "https://listen.ramashamedia.com:8330/currentsong?sid=1";
+const audio = document.getElementById('audio');
+const playBtn = document.getElementById('play-stop-btn');
+const playSvg = document.getElementById('play-svg');
+const stopSvg = document.getElementById('stop-svg');
+const songTitleEl = document.getElementById('song-title');
+const artistNameEl = document.getElementById('artist-name');
+const stickyPlayer = document.getElementById('sticky-player');
+const togglePosBtn = document.getElementById('toggle-pos-btn');
+const toggleArrow = document.getElementById('toggle-arrow');
+let isPlaying = false;
+
+// Play/Stop button logic with slim SVG icons
+playBtn.addEventListener('click', async () => {
+  if (isPlaying) {
+    audio.pause();
+    audio.src = '';
+    isPlaying = false;
+    playSvg.style.display = 'block';
+    stopSvg.style.display = 'none';
+  } else {
+    audio.src = STREAM_URL;
+    try {
+      await audio.play();
+      isPlaying = true;
+      playSvg.style.display = 'none';
+      stopSvg.style.display = 'block';
+    } catch (e) {
+      isPlaying = false;
+      playSvg.style.display = 'block';
+      stopSvg.style.display = 'none';
+      alert('Unable to play stream.');
+    }
+  }
+});
+
+// Fetch and display song info using CORS proxy
+async function updateSongInfo() {
+    try {
+        const proxyUrl = 'https://api.allorigins.win/get?url=';
+        const targetUrl = encodeURIComponent(SONG_API);
+        const response = await fetch(proxyUrl + targetUrl);
+
+        if (!response.ok) throw new Error('Failed to fetch');
+
+        const data = await response.json();
+        const clean = data.contents.trim();
+        let artist = 'Ramasha Media';
+        let title = clean;
+
+        if (clean.includes(' - ')) {
+            [artist, title] = clean.split(' - ', 2);
+        }
+
+        songTitleEl.textContent = title || 'No track information';
+        artistNameEl.textContent = artist || 'Ramasha Media';
+    } catch (e) {
+        songTitleEl.textContent = 'No track information';
+        artistNameEl.textContent = 'Ramasha Media';
+        console.warn('Song info fetch failed:', e.message);
+    }
+}
+
+updateSongInfo();
+setInterval(updateSongInfo, 10000);
+
+// Toggle sticky bar position with Bootstrap chevrons
+togglePosBtn.addEventListener('click', () => {
+  if (stickyPlayer.classList.contains('bottom')) {
+    stickyPlayer.classList.remove('bottom');
+    stickyPlayer.classList.add('top');
+    // Chevron down at top
+    toggleArrow.classList.remove('bi-chevron-up');
+    toggleArrow.classList.add('bi-chevron-down');
+  } else {
+    stickyPlayer.classList.remove('top');
+    stickyPlayer.classList.add('bottom');
+    // Chevron up at bottom
+    toggleArrow.classList.remove('bi-chevron-down');
+    toggleArrow.classList.add('bi-chevron-up');
+  }
+});
+</script>
+</body>
+</html>

@@ -239,38 +239,40 @@ async function updateSongInfo () {
 }
 
 function applyMarquee () {
+  /* reset anything left from a previous call */
   artistNameEl.classList.remove("marquee");
   artistNameEl.style.animation = "";
-
   const oldStyle = document.getElementById("dynamic-marquee-keyframes");
   if (oldStyle) oldStyle.remove();
 
-  setTimeout(() => {
-    const mask       = artistNameEl.parentElement;
-    const textWidth  = artistNameEl.scrollWidth;
-    const maskWidth  = mask.clientWidth;
+  /* wait one frame so scrollWidth / layout are correct */
+  requestAnimationFrame(() => {
+    const mask      = artistNameEl.parentElement;                    // .artist-mask
+    const maskRect  = mask.getBoundingClientRect();
+    const arrowRect = togglePosBtn.getBoundingClientRect();          // chevron button
 
-    if (textWidth > maskWidth) {
-      /*  NEW: scroll from completely outside the right edge
-          to completely outside the left edge                   */
-      const distance = textWidth + maskWidth;
+    const textWidth = artistNameEl.scrollWidth;
+    const startX    = arrowRect.left + arrowRect.width - maskRect.left;  // → from chevron edge
+    const distance  = textWidth + startX;                                // how far to travel
 
+    if (textWidth > mask.clientWidth) {
+      /* build keyframes unique to this width */
       const keyframes = `
       @keyframes marquee-move {
-        0%   { transform: translateX(${maskWidth}px); }
+        0%   { transform: translateX(${startX}px); }
         100% { transform: translateX(-${distance}px); }
       }`;
 
-      const styleSheet = document.createElement("style");
-      styleSheet.id    = "dynamic-marquee-keyframes";
-      styleSheet.textContent = keyframes;
-      document.head.appendChild(styleSheet);
+      const style = document.createElement("style");
+      style.id    = "dynamic-marquee-keyframes";
+      style.textContent = keyframes;
+      document.head.appendChild(style);
 
-      const duration = Math.max(distance / 40, 8); // keep your speed formula
+      const duration = Math.max(distance / 40, 8);  // same speed formula
       artistNameEl.classList.add("marquee");
       artistNameEl.style.animation = `marquee-move ${duration}s linear infinite`;
     }
-  }, 50);
+  });
 }
 
 playBtn.addEventListener("click", async () => {

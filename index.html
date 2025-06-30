@@ -16,6 +16,7 @@
 }
 body {
   font-family: 'Poppins', Arial, sans-serif;
+  margin: 0; /* Ensure no default margins interfere */
 }
 #sticky-player {
   position: fixed;
@@ -62,21 +63,16 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  position: relative; /* Ensure masks are positioned relative to this */
 }
 .title-mask {
   display: block;
-  position: fixed;
-  left: 0;
-  width: 100vw;
+  position: absolute;
+  left: 60px; /* Start after play button */
   overflow: hidden;
   height: 1.5em;
-  z-index: 999; /* Below sticky-player */
-}
-#sticky-player.top .title-mask {
-  top: 0;
-}
-#sticky-player.bottom .title-mask {
-  bottom: 60px; /* Adjust based on sticky-player height */
+  mask-image: linear-gradient(to right, black 85%, transparent 95%);
+  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 95%);
 }
 #song-title {
   font-family: 'Rancho', cursive;
@@ -95,18 +91,12 @@ body {
 }
 .artist-mask {
   display: block;
-  position: fixed;
-  left: 0;
-  width: 100vw;
+  position: absolute;
+  left: 60px; /* Start after play button */
   overflow: hidden;
   height: 1.2em;
-  z-index: 999; /* Below sticky-player */
-}
-#sticky-player.top .artist-mask {
-  top: 24px; /* Adjust based on title height */
-}
-#sticky-player.bottom .artist-mask {
-  bottom: 36px; /* Adjust based on title and sticky-player height */
+  mask-image: linear-gradient(to right, black 85%, transparent 95%);
+  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 95%);
 }
 #artist-name {
   font-family: 'Poppins', Arial, sans-serif;
@@ -157,6 +147,7 @@ body {
   #toggle-pos-btn { font-size: 1.3rem; margin-left: 8px; }
   #song-title { font-size: 1.05rem; }
   #artist-name { font-size: 0.93em; }
+  .title-mask, .artist-mask { left: 40px; } /* Adjust for smaller play button */
   .debug-info { display: none; }
 }
 </style>
@@ -226,7 +217,7 @@ const rawDataEl     = document.getElementById("raw-data");
 let isPlaying   = false;
 let updateCount = 0;
 
-async function fetchSongTitle () {
+async function fetchSongTitle() {
   const resp = await fetch(SONG_API + '?_=' + Date.now());
   if (!resp.ok) throw new Error("Error Loading.");
   const data = await resp.json();
@@ -237,7 +228,7 @@ async function fetchSongTitle () {
   return data;
 }
 
-async function updateSongInfo () {
+async function updateSongInfo() {
   updateCount++;
   updateCountEl.textContent = updateCount;
   lastUpdateEl.textContent  = new Date().toLocaleTimeString();
@@ -283,14 +274,27 @@ function applyMarquee() {
   requestAnimationFrame(() => {
     const titleMask = songTitleEl.parentElement;
     const artistMask = artistNameEl.parentElement;
-    
+    const playBtnRect = playBtn.getBoundingClientRect();
+    const toggleBtnRect = togglePosBtn.getBoundingClientRect();
+    const isTop = stickyPlayer.classList.contains("top");
+
+    // Set vertical positioning based on sticky player state
+    titleMask.style.top = isTop ? "12px" : "auto";
+    titleMask.style.bottom = isTop ? "auto" : "48px"; // Adjust for player height
+    artistMask.style.top = isTop ? "30px" : "auto";
+    artistMask.style.bottom = isTop ? "auto" : "30px"; // Below title
+
+    // Calculate available width from play button to toggle button
+    const availableWidth = toggleBtnRect.left - playBtnRect.right - 16; // Margin
+
     let keyframesCSS = '';
     
     // Handle title marquee
+   –
+
     const titleWidth = songTitleEl.scrollWidth;
-    const titleMaskWidth = window.innerWidth; // Use full window width
-    if (titleWidth > titleMaskWidth) {
-      const overflow = titleWidth - titleMaskWidth;
+    if (titleWidth > availableWidth) {
+      const overflow = titleWidth - availableWidth;
       const titleDuration = Math.max(overflow / 25, 4); // Slower speed: 25px per second
       
       keyframesCSS += `
@@ -306,9 +310,8 @@ function applyMarquee() {
     
     // Handle artist marquee
     const artistWidth = artistNameEl.scrollWidth;
-    const artistMaskWidth = window.innerWidth; // Use full window width
-    if (artistWidth > artistMaskWidth) {
-      const overflow = artistWidth - artistMaskWidth;
+    if (artistWidth > availableWidth) {
+      const overflow = artistWidth - availableWidth;
       const artistDuration = Math.max(overflow / 25, 4); // Slower speed: 25px per second
       
       keyframesCSS += `
@@ -332,7 +335,7 @@ function applyMarquee() {
 
     // Function to check for overlaps and toggle visibility
     function checkOverlaps() {
-      const divs = document.querySelectorAll("div:not(.title-mask):not(.artist-mask):not(.title-mask *):not(.artist-mask *)");
+      const divs = document.querySelectorAll("div:not(#sticky-player):not(.title-mask):not(.artist-mask):not(.title-mask *):not(.artist-mask *):not(#debug-info)");
       [songTitleEl, artistNameEl].forEach((el) => {
         const elRect = el.getBoundingClientRect();
         let isOverlapping = false;
@@ -355,7 +358,9 @@ function applyMarquee() {
       });
 
       // Continue checking overlaps during animation
-      requestAnimationFrame(checkOverlaps);
+      if (songTitleEl.classList.contains("marquee") || artistNameEl.classList.contains("marquee")) {
+        requestAnimationFrame(checkOverlaps);
+      }
     }
 
     // Start overlap checking
@@ -395,7 +400,7 @@ playBtn.addEventListener("click", async () => {
   }
 });
 
-audio.addEventListener("play",  updateSongInfo);
+audio.addEventListener("play", updateSongInfo);
 audio.addEventListener("ended", () => {
   isPlaying = false;
   playSvg.style.display = "block";
@@ -421,7 +426,7 @@ togglePosBtn.addEventListener("click", () => {
   const isBottom = stickyPlayer.classList.toggle("bottom");
   stickyPlayer.classList.toggle("top", !isBottom);
 
-  toggleArrow.classList.toggle("bi-chevron-up",   isBottom);
+  toggleArrow.classList.toggle("bi-chevron-up", isBottom);
   toggleArrow.classList.toggle("bi-chevron-down", !isBottom);
   
   // Reapply marquee after position change
@@ -429,4 +434,21 @@ togglePosBtn.addEventListener("click", () => {
 });
 
 let clickCount = 0;
-document.add
+document.addEventListener("click", () => {
+  clickCount++;
+  setTimeout(() => (clickCount = 0), 500);
+  if (clickCount === 3) {
+    debugInfo.style.display = debugInfo.style.display === "none" ? "block" : "none";
+  }
+});
+
+// Reapply marquee on window resize
+window.addEventListener('resize', () => {
+  setTimeout(applyMarquee, 100);
+});
+
+updateSongInfo();
+setInterval(updateSongInfo, 10000);
+</script>
+</body>
+</html>

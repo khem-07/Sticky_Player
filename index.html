@@ -31,6 +31,7 @@ body {
   box-shadow: 0 0 10px #0002;
   transition: top 0.3s, bottom 0.3s;
   font-family: 'Poppins', Arial, sans-serif;
+  overflow: hidden;
 }
 #sticky-player.top {
   top: 0;
@@ -66,7 +67,6 @@ body {
 .title-mask {
   display: block;
   position: relative;
-  overflow: hidden;
   height: 1.5em;
   mask-image: linear-gradient(to right, black 80%, transparent 100%);
   -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
@@ -90,7 +90,6 @@ body {
   display: block;
   position: relative;
   max-width: 170px;
-  overflow: hidden;
   height: 1.2em;
   mask-image: linear-gradient(to right, black 80%, transparent 100%);
   -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
@@ -270,62 +269,81 @@ function applyMarquee() {
     requestAnimationFrame(() => {
         const titleMask = songTitleEl.parentElement;
         const artistMask = artistNameEl.parentElement;
-        const stickyPlayerWidth = stickyPlayer.clientWidth; // Get the full width of the sticky player
+        const stickyPlayerWidth = stickyPlayer.clientWidth;
 
         let keyframesCSS = '';
 
-        // Handle title marquee
+        // --- Title Marquee ---
         const titleWidth = songTitleEl.scrollWidth;
         const titleMaskWidth = titleMask.clientWidth;
         
-        // Calculate the starting position for the title
-        // We want it to start from the right edge of the player, offset by the toggle button's width and padding
-        // Approx. distance from right edge of song-info to the right edge of the player (including toggle button)
-        // This value might need fine-tuning based on your exact padding and margin values.
-        const rightOffsetForTitle = stickyPlayerWidth - (titleMask.offsetLeft + titleMaskWidth);
+        // Calculate the actual available space for the text content
+        // This is the width of the song-info div
+        const songInfoWidth = document.getElementById('song-info').clientWidth;
 
-        if (titleWidth > titleMaskWidth) {
-            const startPositionTitle = rightOffsetForTitle + titleWidth; // Start off-screen to the right
-            const endPositionTitle = -titleWidth; // Scroll until the whole title is off to the left
+        if (titleWidth > songInfoWidth) { // Check if title overflows the song-info area
+            // Start from the right edge of the sticky player, minus player's right padding
+            // We need to know the exact position of the right boundary of the *text's container* within the sticky player
+            // Let's assume the right edge of the 'song-info' div is where the text should effectively disappear on the right
+            // and the left edge of 'song-info' is where it should reappear/start its visible journey.
 
-            const titleDuration = Math.max((startPositionTitle - titleMaskWidth) / 25, 4); // Adjust duration based on new distance
+            // To start from the extreme right of the player (before the chevron):
+            // Calculate the distance from the left edge of the player to the left edge of the song-info div
+            const songInfoLeftOffset = songTitleEl.getBoundingClientRect().left - stickyPlayer.getBoundingClientRect().left;
+            
+            // The starting X position should be the width of the sticky player
+            const startPositionTitle = stickyPlayerWidth - songInfoLeftOffset; // Start its left edge at the player's right edge relative to song-info's left.
+
+            // The ending X position should be where the right edge of the text goes completely past the left edge of the song-info div
+            // This is the negative of the actual text width plus the width of the song-info div
+            const endPositionTitle = - (titleWidth + songInfoLeftOffset); // Corrected calculation
+
+            // Duration based on the total distance traveled
+            const totalTravelDistanceTitle = startPositionTitle - endPositionTitle;
+            const titleDuration = Math.max(totalTravelDistanceTitle / 35, 6); // Slightly adjust speed, 35px/s looks good
 
             keyframesCSS += `
             @keyframes title-marquee {
-                from { transform: translateX(${startPositionTitle}px); }
-                to { transform: translateX(${endPositionTitle}px); }
+                0% { transform: translateX(${startPositionTitle}px); }
+                100% { transform: translateX(${endPositionTitle}px); }
             }`;
 
             // Apply title animation
             songTitleEl.classList.add("marquee");
             songTitleEl.style.animation = `title-marquee ${titleDuration}s linear infinite`;
         }
-
-        // Handle artist marquee
+        
+        // --- Artist Marquee ---
         const artistWidth = artistNameEl.scrollWidth;
-        const artistMaskWidth = artistMask.clientWidth;
+        const artistMaskWidth = artistMask.clientWidth; // This is max-width 170px for artist
+        
+        if (artistWidth > artistMaskWidth) { // Check if artist overflows its specific mask (170px)
+            // Artist name is constrained by max-width, so its start/end is slightly different
+            // It needs to start from the right of its *own* limited mask area (170px)
+            
+            const artistInfoLeftOffset = artistNameEl.getBoundingClientRect().left - stickyPlayer.getBoundingClientRect().left;
+            
+            // We want it to start from the right edge of its max-width container, not necessarily the full player
+            // But if you want it to behave like title and start from the far right of the *player*:
+            const startPositionArtist = stickyPlayerWidth - artistInfoLeftOffset;
 
-        // Calculate the starting position for the artist name
-        // Similar to title, start from the right edge of the player, offset by the toggle button and padding.
-        const rightOffsetForArtist = stickyPlayerWidth - (artistMask.offsetLeft + artistMaskWidth);
+            // And end past the left edge of its own constrained mask
+            const endPositionArtist = -(artistWidth + artistInfoLeftOffset);
 
-        if (artistWidth > artistMaskWidth) {
-            const startPositionArtist = rightOffsetForArtist + artistWidth; // Start off-screen to the right
-            const endPositionArtist = -artistWidth; // Scroll until the whole artist name is off to the left
-
-            const artistDuration = Math.max((startPositionArtist - artistMaskWidth) / 25, 4); // Adjust duration based on new distance
+            const totalTravelDistanceArtist = startPositionArtist - endPositionArtist;
+            const artistDuration = Math.max(totalTravelDistanceArtist / 35, 6); // Use same speed
 
             keyframesCSS += `
             @keyframes artist-marquee {
-                from { transform: translateX(${startPositionArtist}px); }
-                to { transform: translateX(${endPositionArtist}px); }
+                0% { transform: translateX(${startPositionArtist}px); }
+                100% { transform: translateX(${endPositionArtist}px); }
             }`;
 
             // Apply artist animation
             artistNameEl.classList.add("marquee");
             artistNameEl.style.animation = `artist-marquee ${artistDuration}s linear infinite`;
         }
-
+        
         // Apply animations if we have keyframes
         if (keyframesCSS) {
             const style = document.createElement("style");
@@ -335,7 +353,6 @@ function applyMarquee() {
         }
     });
 }
-
 playBtn.addEventListener("click", async () => {
   if (isPlaying) {
     audio.pause();

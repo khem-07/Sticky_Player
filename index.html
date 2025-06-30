@@ -92,7 +92,6 @@ body {
   display: inline-block;
   position: relative;
   vertical-align: middle;
-  text-transform: lowercase;
 }
 #artist-name.marquee {
   will-change: transform;
@@ -252,10 +251,14 @@ function applyMarquee () {
     const maskWidth  = mask.clientWidth;
 
     if (textWidth > maskWidth) {
+      /*  NEW: scroll from completely outside the right edge
+          to completely outside the left edge                   */
+      const distance = textWidth + maskWidth;
+
       const keyframes = `
       @keyframes marquee-move {
         0%   { transform: translateX(${maskWidth}px); }
-        100% { transform: translateX(-${textWidth}px); }
+        100% { transform: translateX(-${distance}px); }
       }`;
 
       const styleSheet = document.createElement("style");
@@ -263,7 +266,7 @@ function applyMarquee () {
       styleSheet.textContent = keyframes;
       document.head.appendChild(styleSheet);
 
-      const duration = Math.max((textWidth + maskWidth) / 40, 8);
+      const duration = Math.max(distance / 40, 8); // keep your speed formula
       artistNameEl.classList.add("marquee");
       artistNameEl.style.animation = `marquee-move ${duration}s linear infinite`;
     }

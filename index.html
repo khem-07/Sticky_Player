@@ -270,11 +270,6 @@ function applyMarquee() {
   requestAnimationFrame(() => {
     const titleMask = songTitleEl.parentElement;
     const artistMask = artistNameEl.parentElement;
-    const arrowRect = togglePosBtn.getBoundingClientRect();
-    
-    // Calculate available space from play button to chevron button
-    const playBtnRect = playBtn.getBoundingClientRect();
-    const availableWidth = arrowRect.left - playBtnRect.right - 32; // 32px for margins
     
     let keyframesCSS = '';
     
@@ -282,38 +277,36 @@ function applyMarquee() {
     const titleWidth = songTitleEl.scrollWidth;
     const titleMaskWidth = titleMask.clientWidth;
     if (titleWidth > titleMaskWidth) {
-      // Start from right edge and move to show all text
       const overflow = titleWidth - titleMaskWidth;
       const titleDuration = Math.max(overflow / 25, 4); // Slower speed: 25px per second
       
       keyframesCSS += `
       @keyframes title-marquee {
-        0%, 20% { transform: translateX(0px); }
-        80%, 100% { transform: translateX(-${overflow + 20}px); }
+        from { transform: translateX(0%); }
+        to { transform: translateX(-100%); }
       }`;
       
       // Apply title animation
       songTitleEl.classList.add("marquee");
-      songTitleEl.style.animation = `title-marquee ${titleDuration}s ease-in-out infinite`;
+      songTitleEl.style.animation = `title-marquee ${titleDuration}s linear infinite`;
     }
     
     // Handle artist marquee
     const artistWidth = artistNameEl.scrollWidth;
     const artistMaskWidth = artistMask.clientWidth;
     if (artistWidth > artistMaskWidth) {
-      // Start from right edge and move to show all text
       const overflow = artistWidth - artistMaskWidth;
       const artistDuration = Math.max(overflow / 25, 4); // Slower speed: 25px per second
       
       keyframesCSS += `
       @keyframes artist-marquee {
-        0%, 20% { transform: translateX(0px); }
-        80%, 100% { transform: translateX(-${overflow + 20}px); }
+        from { transform: translateX(0%); }
+        to { transform: translateX(-100%); }
       }`;
       
       // Apply artist animation
       artistNameEl.classList.add("marquee");
-      artistNameEl.style.animation = `artist-marquee ${artistDuration}s ease-in-out infinite`;
+      artistNameEl.style.animation = `artist-marquee ${artistDuration}s linear infinite`;
     }
     
     // Apply animations if we have keyframes
@@ -325,7 +318,6 @@ function applyMarquee() {
     }
   });
 }
-
 playBtn.addEventListener("click", async () => {
   if (isPlaying) {
     audio.pause();

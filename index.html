@@ -258,66 +258,84 @@ function resetMarquee(element) {
 }
 
 function applyMarquee() {
-  // Reset any existing marquee animations
-  resetMarquee(songTitleEl);
-  resetMarquee(artistNameEl);
-  
-  // Remove old dynamic styles
-  const oldStyle = document.getElementById("dynamic-marquee-keyframes");
-  if (oldStyle) oldStyle.remove();
+    // Reset any existing marquee animations
+    resetMarquee(songTitleEl);
+    resetMarquee(artistNameEl);
 
-  // Wait one frame for layout to settle
-  requestAnimationFrame(() => {
-    const titleMask = songTitleEl.parentElement;
-    const artistMask = artistNameEl.parentElement;
-    
-    let keyframesCSS = '';
-    
-    // Handle title marquee
-    const titleWidth = songTitleEl.scrollWidth;
-    const titleMaskWidth = titleMask.clientWidth;
-    if (titleWidth > titleMaskWidth) {
-      const overflow = titleWidth - titleMaskWidth;
-      const titleDuration = Math.max(overflow / 25, 4); // Slower speed: 25px per second
-      
-      keyframesCSS += `
-      @keyframes title-marquee {
-        from { transform: translateX(0%); }
-        to { transform: translateX(-100%); }
-      }`;
-      
-      // Apply title animation
-      songTitleEl.classList.add("marquee");
-      songTitleEl.style.animation = `title-marquee ${titleDuration}s linear infinite`;
-    }
-    
-    // Handle artist marquee
-    const artistWidth = artistNameEl.scrollWidth;
-    const artistMaskWidth = artistMask.clientWidth;
-    if (artistWidth > artistMaskWidth) {
-      const overflow = artistWidth - artistMaskWidth;
-      const artistDuration = Math.max(overflow / 25, 4); // Slower speed: 25px per second
-      
-      keyframesCSS += `
-      @keyframes artist-marquee {
-        from { transform: translateX(0%); }
-        to { transform: translateX(-100%); }
-      }`;
-      
-      // Apply artist animation
-      artistNameEl.classList.add("marquee");
-      artistNameEl.style.animation = `artist-marquee ${artistDuration}s linear infinite`;
-    }
-    
-    // Apply animations if we have keyframes
-    if (keyframesCSS) {
-      const style = document.createElement("style");
-      style.id = "dynamic-marquee-keyframes";
-      style.textContent = keyframesCSS;
-      document.head.appendChild(style);
-    }
-  });
+    // Remove old dynamic styles
+    const oldStyle = document.getElementById("dynamic-marquee-keyframes");
+    if (oldStyle) oldStyle.remove();
+
+    // Wait one frame for layout to settle
+    requestAnimationFrame(() => {
+        const titleMask = songTitleEl.parentElement;
+        const artistMask = artistNameEl.parentElement;
+        const stickyPlayerWidth = stickyPlayer.clientWidth; // Get the full width of the sticky player
+
+        let keyframesCSS = '';
+
+        // Handle title marquee
+        const titleWidth = songTitleEl.scrollWidth;
+        const titleMaskWidth = titleMask.clientWidth;
+        
+        // Calculate the starting position for the title
+        // We want it to start from the right edge of the player, offset by the toggle button's width and padding
+        // Approx. distance from right edge of song-info to the right edge of the player (including toggle button)
+        // This value might need fine-tuning based on your exact padding and margin values.
+        const rightOffsetForTitle = stickyPlayerWidth - (titleMask.offsetLeft + titleMaskWidth);
+
+        if (titleWidth > titleMaskWidth) {
+            const startPositionTitle = rightOffsetForTitle + titleWidth; // Start off-screen to the right
+            const endPositionTitle = -titleWidth; // Scroll until the whole title is off to the left
+
+            const titleDuration = Math.max((startPositionTitle - titleMaskWidth) / 25, 4); // Adjust duration based on new distance
+
+            keyframesCSS += `
+            @keyframes title-marquee {
+                from { transform: translateX(${startPositionTitle}px); }
+                to { transform: translateX(${endPositionTitle}px); }
+            }`;
+
+            // Apply title animation
+            songTitleEl.classList.add("marquee");
+            songTitleEl.style.animation = `title-marquee ${titleDuration}s linear infinite`;
+        }
+
+        // Handle artist marquee
+        const artistWidth = artistNameEl.scrollWidth;
+        const artistMaskWidth = artistMask.clientWidth;
+
+        // Calculate the starting position for the artist name
+        // Similar to title, start from the right edge of the player, offset by the toggle button and padding.
+        const rightOffsetForArtist = stickyPlayerWidth - (artistMask.offsetLeft + artistMaskWidth);
+
+        if (artistWidth > artistMaskWidth) {
+            const startPositionArtist = rightOffsetForArtist + artistWidth; // Start off-screen to the right
+            const endPositionArtist = -artistWidth; // Scroll until the whole artist name is off to the left
+
+            const artistDuration = Math.max((startPositionArtist - artistMaskWidth) / 25, 4); // Adjust duration based on new distance
+
+            keyframesCSS += `
+            @keyframes artist-marquee {
+                from { transform: translateX(${startPositionArtist}px); }
+                to { transform: translateX(${endPositionArtist}px); }
+            }`;
+
+            // Apply artist animation
+            artistNameEl.classList.add("marquee");
+            artistNameEl.style.animation = `artist-marquee ${artistDuration}s linear infinite`;
+        }
+
+        // Apply animations if we have keyframes
+        if (keyframesCSS) {
+            const style = document.createElement("style");
+            style.id = "dynamic-marquee-keyframes";
+            style.textContent = keyframesCSS;
+            document.head.appendChild(style);
+        }
+    });
 }
+
 playBtn.addEventListener("click", async () => {
   if (isPlaying) {
     audio.pause();

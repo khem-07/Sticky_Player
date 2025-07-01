@@ -306,7 +306,7 @@ function applyMarquee() {
             songTitleEl.innerHTML = songTitleEl.textContent;
         }
 
-        // --- Artist Marquee (Right to Left scroll) ---
+        // --- Artist Marquee (Right to Left scroll using full container width) ---
         const originalArtistWidth = artistNameEl.scrollWidth;
         const artistMaskWidth = artistMask.clientWidth; // This is max-width 170px
 
@@ -314,16 +314,15 @@ function applyMarquee() {
             // Duplicate the content for seamless loop
             artistNameEl.innerHTML = artistNameEl.textContent + ' <span class="marquee-copy">' + artistNameEl.textContent + '</span>';
 
-            // Calculate the start position (text starts from right side of container)
-            const startPosition = artistMaskWidth - originalArtistWidth;
-            const scrollDistanceArtist = originalArtistWidth + Math.abs(startPosition) + 20; // Add spacing
+            // Use the full container width for scrolling distance
+            const scrollDistanceArtist = artistMaskWidth + originalArtistWidth + 20; // Full container + text width + spacing
             
             const speed = 40; // Pixels per second
             const artistDuration = scrollDistanceArtist / speed;
 
             keyframesCSS += `
             @keyframes artist-marquee {
-                0% { transform: translateX(${Math.abs(startPosition)}px); }
+                0% { transform: translateX(${artistMaskWidth}px); }
                 100% { transform: translateX(-${originalArtistWidth + 20}px); }
             }`;
 

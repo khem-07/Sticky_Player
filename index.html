@@ -68,6 +68,7 @@ body {
   display: block;
   position: relative;
   height: 1.5em;
+  overflow: hidden;
   mask-image: linear-gradient(to right, black 80%, transparent 100%);
   -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
 }
@@ -91,8 +92,9 @@ body {
   position: relative;
   max-width: 170px;
   height: 1.2em;
-  mask-image: linear-gradient(to right, black 80%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
+  overflow: hidden;
+  mask-image: linear-gradient(to left, black 80%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to left, black 80%, transparent 100%);
 }
 #artist-name {
   font-family: 'Poppins', Arial, sans-serif;
@@ -104,9 +106,11 @@ body {
   display: inline-block;
   position: relative;
   vertical-align: middle;
+  text-align: right;
 }
 #artist-name.marquee {
   will-change: transform;
+  text-align: left;
 }
 #toggle-pos-btn {
   background: none;
@@ -273,12 +277,10 @@ function applyMarquee() {
     requestAnimationFrame(() => {
         const titleMask = songTitleEl.parentElement;
         const artistMask = artistNameEl.parentElement;
-        // We no longer need stickyPlayerWidth for calculating start/end for seamless loop
-        // as the animation is relative to the text's own width.
 
         let keyframesCSS = '';
 
-        // --- Title Marquee ---
+        // --- Title Marquee (Left to Right scroll) ---
         const originalTitleWidth = songTitleEl.scrollWidth;
         const titleMaskWidth = titleMask.clientWidth;
 
@@ -286,13 +288,9 @@ function applyMarquee() {
             // Duplicate the content for seamless loop
             songTitleEl.innerHTML = songTitleEl.textContent + ' <span class="marquee-copy">' + songTitleEl.textContent + '</span>';
 
-            // Now get the width of the duplicated content
-            const duplicatedTitleWidth = songTitleEl.scrollWidth; // This will be roughly double originalWidth
-            const scrollDistanceTitle = originalTitleWidth * 1.5; // We scroll exactly one instance's width
-
-            // Speed: pixels per second. Adjust as desired.
+            const scrollDistanceTitle = originalTitleWidth + 20; // Add some spacing
             const speed = 40; // Pixels per second
-            const titleDuration = scrollDistanceTitle / speed; // Time to scroll one instance's width
+            const titleDuration = scrollDistanceTitle / speed;
 
             keyframesCSS += `
             @keyframes title-marquee {
@@ -300,48 +298,42 @@ function applyMarquee() {
                 100% { transform: translateX(-${scrollDistanceTitle}px); }
             }`;
 
-            // Apply title animation
             songTitleEl.classList.add("marquee");
             songTitleEl.style.animation = `title-marquee ${titleDuration}s linear infinite`;
         } else {
-            // Ensure no extra content if not marqeeing
             songTitleEl.classList.remove("marquee");
             songTitleEl.style.animation = "";
-            songTitleEl.innerHTML = songTitleEl.textContent; // Clean up any lingering duplicates
+            songTitleEl.innerHTML = songTitleEl.textContent;
         }
 
-
-        // --- Artist Marquee ---
+        // --- Artist Marquee (Right to Left scroll) ---
         const originalArtistWidth = artistNameEl.scrollWidth;
-        const artistMaskWidth = artistMask.clientWidth; // This is max-width 170px for artist
+        const artistMaskWidth = artistMask.clientWidth; // This is max-width 170px
 
         if (originalArtistWidth > artistMaskWidth) {
             // Duplicate the content for seamless loop
             artistNameEl.innerHTML = artistNameEl.textContent + ' <span class="marquee-copy">' + artistNameEl.textContent + '</span>';
 
-            const duplicatedArtistWidth = artistNameEl.scrollWidth; // This will be roughly double originalWidth
-            const scrollDistanceArtist = originalArtistWidth * 1.5; // We scroll exactly one instance's width
-
-            // Speed: pixels per second. Adjust as desired.
+            // Calculate the start position (text starts from right side of container)
+            const startPosition = artistMaskWidth - originalArtistWidth;
+            const scrollDistanceArtist = originalArtistWidth + Math.abs(startPosition) + 20; // Add spacing
+            
             const speed = 40; // Pixels per second
-            const artistDuration = scrollDistanceArtist / speed; // Time to scroll one instance's width
+            const artistDuration = scrollDistanceArtist / speed;
 
             keyframesCSS += `
             @keyframes artist-marquee {
-                0% { transform: translateX(0); }
-                100% { transform: translateX(-${scrollDistanceArtist}px); }
+                0% { transform: translateX(${Math.abs(startPosition)}px); }
+                100% { transform: translateX(-${originalArtistWidth + 20}px); }
             }`;
 
-            // Apply artist animation
             artistNameEl.classList.add("marquee");
             artistNameEl.style.animation = `artist-marquee ${artistDuration}s linear infinite`;
         } else {
-            // Ensure no extra content if not marqeeing
             artistNameEl.classList.remove("marquee");
             artistNameEl.style.animation = "";
-            artistNameEl.innerHTML = artistNameEl.textContent; // Clean up any lingering duplicates
+            artistNameEl.innerHTML = artistNameEl.textContent;
         }
-
 
         // Apply animations if we have keyframes
         if (keyframesCSS) {
@@ -352,8 +344,6 @@ function applyMarquee() {
         }
     });
 }
-
-
 
 playBtn.addEventListener("click", async () => {
   if (isPlaying) {
@@ -438,4 +428,4 @@ updateSongInfo();
 setInterval(updateSongInfo, 10000);
 </script>
 </body>
-</html> 
+</html>

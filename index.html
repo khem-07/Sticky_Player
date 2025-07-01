@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sticky Player</title>
 
-<!-- Google Fonts -->
+<!-- Google Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Rancho&family=Poppins:wght@400;700&display=swap" rel="stylesheet"/>
-<!-- Bootstrap Icons -->
+<!-- Bootstrap Icons -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"/>
 
 <style>
@@ -16,86 +16,83 @@
   --text-color:#fff;
   --bg-color:#222;
 }
-body{
-  font-family:'Poppins',Arial,sans-serif;
-  margin:0;
-}
+body{font-family:'Poppins',Arial,sans-serif;margin:0;}
+
 /* ───────────────── Sticky player ───────────────── */
 #sticky-player{
-  position:fixed;
-  left:0;right:0;bottom:0;
-  background:var(--bg-color);
-  color:var(--text-color);
-  display:flex;align-items:center;
-  padding:12px 16px;
-  box-shadow:0 0 10px #0002;
-  z-index:1000;
-  transition:top .3s,bottom .3s;
-  overflow:hidden;
+  position:fixed;left:0;right:0;bottom:0;
+  background:var(--bg-color);color:var(--text-color);
+  display:flex;align-items:center;padding:12px 16px;
+  box-shadow:0 0 10px #0002;z-index:1000;
+  transition:top .3s,bottom .3s;overflow:hidden;
 }
 #sticky-player.top   {top:0;bottom:auto;}
 #sticky-player.bottom{bottom:0;top:auto;}
 
 #play-stop-btn{
-  background:none;border:none;
-  color:var(--play-btn-color);
-  font-size:2.2rem;
-  margin-right:16px;
-  cursor:pointer;display:flex;align-items:center;
+  background:none;border:none;color:var(--play-btn-color);
+  font-size:2.2rem;margin-right:16px;cursor:pointer;
+  display:flex;align-items:center;
 }
 #play-stop-btn svg{width:3.2rem;height:3.2rem;display:block;}
 
 #song-info{
   flex:1;min-width:0;
   display:flex;flex-direction:column;gap:2px;
-}
-#song-title{
-  font-family:'Rancho',cursive;
-  font-size:1.3rem;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-#artist-name{
-  font-size:.98em;opacity:.75;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-/* ─── Marquee animation (left‑to‑right) ─── */
-@keyframes scroll-left {
-  0%   { transform: translateX(100%); }
-  100% { transform: translateX(-100%); }
+  overflow:hidden;                      /* clip scrolling text           */
 }
 
-/* Apply to any element with `.marquee` */
-.marquee {
-  display: inline-block;
-  white-space: nowrap;
-  /* duplicate the text once so the scroll is seamless */
-  position: relative;
-  animation: scroll-left 12s linear infinite;
+/* ───────────── Marquee (overflow‑aware) ───────────── */
+@keyframes marquee {
+  0%   { left: 0; }
+  100% { left: -100%; }
 }
 
-/* Duplicate copy using a pseudo‑element */
-.marquee::after {
-  content: attr(data-text);          /* repeat the same text */
-  padding-left: 2rem;                /* little gap between copies */
+.marquee{
+  height:1.4em;width:100%;
+  overflow:hidden;position:relative;
+
+  /* offset so first copy hides under play button */
+  --offset-left : 3.6rem;  /* play SVG width (3.2rem) + ~0.4rem buffer */
+  --offset-gap  : 16px;    /* play button’s margin‑right               */
+
+  padding-left:calc(var(--offset-left) + var(--offset-gap));
+  margin-left :calc(-1 * (var(--offset-left) + var(--offset-gap)));
 }
 
+.marquee > div{
+  display:block;width:200%;position:absolute;
+  animation:marquee 15s linear infinite;
+  animation-play-state:paused;          /* only run if overflow class set */
+}
 
+.marquee.overflow > div{animation-play-state:running;}
+
+.marquee:not(.overflow) span:nth-child(2){display:none;}
+
+.marquee span{
+  float:left;width:50%;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;
+}
+
+/* ───────────────── Text styles ───────────────── */
+#song-title{font-family:'Rancho',cursive;font-size:1.3rem;}
+#artist-name{font-size:.98em;opacity:.75;text-align:right;}
+
+/* ───────────────── Misc controls ───────────────── */
 #toggle-pos-btn{
-  background:none;border:none;
-  color:var(--play-btn-color);
-  font-size:1.7rem;margin-left:16px;
-  cursor:pointer;display:flex;align-items:center;
+  background:none;border:none;color:var(--play-btn-color);
+  font-size:1.7rem;margin-left:16px;cursor:pointer;
+  display:flex;align-items:center;
 }
 #toggle-arrow{opacity:.7;}
 
 .debug-info{
   position:fixed;top:10px;right:10px;
-  background:rgba(0,0,0,.9);color:#fff;
-  padding:10px;border-radius:5px;
-  font-size:11px;max-width:250px;
-  z-index:1001;font-family:monospace;
+  background:rgba(0,0,0,.9);color:#fff;padding:10px;border-radius:5px;
+  font-size:11px;max-width:250px;z-index:1001;font-family:monospace;
 }
-/* ─────────────── Responsive tweaks ─────────────── */
+
 @media(max-width:600px){
   #sticky-player{padding:8px;}
   #play-stop-btn{font-size:1.5rem;margin-right:10px;}
@@ -109,7 +106,7 @@ body{
 <body>
 
 <div id="sticky-player" class="bottom">
-  <!-- Play / stop -->
+  <!-- Play / Stop -->
   <button id="play-stop-btn" aria-label="Play">
     <svg id="play-svg" viewBox="0 0 38 38" fill="none">
       <circle cx="19" cy="19" r="17.5" stroke="currentColor" stroke-width="2"/>
@@ -127,10 +124,22 @@ body{
     </svg>
   </button>
 
-  <!-- Song / artist -->
+  <!-- Song / Artist (marquee) -->
   <div id="song-info">
-    <span id="song-title" class="marquee">Loading…</span>
-    <span id="artist-name" class="marquee"></span>
+    <!-- Title -->
+    <div class="marquee" id="title-marquee">
+      <div>
+        <span id="song-title">Loading…</span>
+        <span id="song-title-copy">Loading…</span>
+      </div>
+    </div>
+    <!-- Artist -->
+    <div class="marquee" id="artist-marquee">
+      <div>
+        <span id="artist-name"></span>
+        <span id="artist-name-copy"></span>
+      </div>
+    </div>
   </div>
 
   <!-- Position toggle -->
@@ -152,20 +161,24 @@ body{
 <audio id="audio" preload="none"></audio>
 
 <script>
-/* ───────────────── Settings ───────────────── */
-const STREAM_URL = 'https://listen.ramashamedia.com:8330/stream';
-const SONG_API   = '/api/currentsong';
+const STREAM_URL='https://listen.ramashamedia.com:8330/stream';
+const SONG_API  ='/api/currentsong';
 
-/* ───────────────── Element refs ───────────────── */
 const audio        = document.getElementById('audio');
 const playBtn      = document.getElementById('play-stop-btn');
 const playSvg      = document.getElementById('play-svg');
 const stopSvg      = document.getElementById('stop-svg');
 const loadingSvg   = document.getElementById('loading-svg');
+
 const songTitleEl  = document.getElementById('song-title');
 const artistNameEl = document.getElementById('artist-name');
+
+const titleMarquee  = document.getElementById('title-marquee');
+const artistMarquee = document.getElementById('artist-marquee');
+const titleCopy     = document.getElementById('song-title-copy');
+const artistCopy    = document.getElementById('artist-name-copy');
+
 const stickyPlayer = document.getElementById('sticky-player');
-const togglePosBtn = document.getElementById('toggle-pos-btn');
 const toggleArrow  = document.getElementById('toggle-arrow');
 
 const debugInfo     = document.getElementById('debug-info');
@@ -174,41 +187,50 @@ const lastUpdateEl  = document.getElementById('last-update');
 const apiStatusEl   = document.getElementById('api-status');
 const rawDataEl     = document.getElementById('raw-data');
 
-/* ───────────────── State ───────────────── */
-let isPlaying   = false;
-let updateCount = 0;
+let isPlaying=false,updateCount=0;
 
-/* ───────────────── API helpers ───────────────── */
+/* overflow‑aware helper */
+function handleMarquee(container, mainSpan, copySpan){
+  copySpan.textContent = mainSpan.textContent;
+  const needsScroll = mainSpan.scrollWidth > container.clientWidth;
+  container.classList.toggle('overflow', needsScroll);
+}
+
+/* API helpers */
 async function fetchSongTitle(){
-  const resp = await fetch(SONG_API + '?_=' + Date.now());
+  const resp=await fetch(SONG_API+'?_='+Date.now());
   if(!resp.ok) throw new Error('Error loading');
-  const data = await resp.json();
-  if(!data.success) throw new Error(data.error || 'No title');
+  const data=await resp.json();
+  if(!data.success) throw new Error(data.error||'No title');
   return data;
 }
 
 async function updateSongInfo(){
   updateCount++;
-  updateCountEl.textContent = updateCount;
-  lastUpdateEl.textContent  = new Date().toLocaleTimeString();
-  apiStatusEl.textContent   = 'Fetching…';
-
+  updateCountEl.textContent=updateCount;
+  lastUpdateEl.textContent=new Date().toLocaleTimeString();
+  apiStatusEl.textContent='Fetching…';
   try{
-    const data = await fetchSongTitle();
-    apiStatusEl.textContent = 'Success';
-    rawDataEl.textContent   = (data.raw || '').substring(0,30)+'…';
+    const d=await fetchSongTitle();
+    apiStatusEl.textContent='Success';
+    rawDataEl.textContent=(d.raw||'').substring(0,30)+'…';
 
-    songTitleEl.textContent  = data.title  || 'No track information';
-    artistNameEl.textContent = data.artist || 'Ramasha Media';
-  }catch(err){
-    songTitleEl.textContent  = err.message === 'No title' ? 'No title' : 'Error loading';
-    artistNameEl.textContent = '';
-    apiStatusEl.textContent  = 'Failed: '+err.message;
+    songTitleEl.textContent = d.title  || 'No track information';
+    artistNameEl.textContent= d.artist || 'Ramasha Media';
+
+    handleMarquee(titleMarquee , songTitleEl , titleCopy );
+    handleMarquee(artistMarquee, artistNameEl, artistCopy);
+  }catch(e){
+    songTitleEl.textContent = e.message==='No title'?'No title':'Error loading';
+    artistNameEl.textContent='';
+    apiStatusEl.textContent='Failed: '+e.message;
+    handleMarquee(titleMarquee , songTitleEl , titleCopy );
+    handleMarquee(artistMarquee, artistNameEl, artistCopy);
   }
 }
 
-/* ───────────────── UI handlers ───────────────── */
-playBtn.addEventListener('click', async ()=>{
+/* Play / pause */
+playBtn.addEventListener('click',async()=>{
   if(isPlaying){
     audio.pause();audio.src='';isPlaying=false;
     playSvg.style.display='block';stopSvg.style.display='none';loadingSvg.style.display='none';
@@ -220,30 +242,36 @@ playBtn.addEventListener('click', async ()=>{
       updateSongInfo();
     }catch(e){
       isPlaying=false;loadingSvg.style.display='none';playSvg.style.display='block';
-      alert('Unable to play stream: '+e.message);
+      alert('Unable to play stream: '+e.message);
     }
   }
 });
-audio.addEventListener('play',  updateSongInfo);
-audio.addEventListener('pause', ()=>{if(audio.ended||audio.error){isPlaying=false;playSvg.style.display='block';stopSvg.style.display='none';}});
-audio.addEventListener('ended', ()=>{isPlaying=false;playSvg.style.display='block';stopSvg.style.display='none';});
-audio.addEventListener('error', ()=>{isPlaying=false;playSvg.style.display='block';stopSvg.style.display='none';});
+audio.addEventListener('play',updateSongInfo);
+audio.addEventListener('pause',()=>{if(audio.ended||audio.error){isPlaying=false;playSvg.style.display='block';stopSvg.style.display='none';}});
+audio.addEventListener('ended',()=>{isPlaying=false;playSvg.style.display='block';stopSvg.style.display='none';});
+audio.addEventListener('error',()=>{isPlaying=false;playSvg.style.display='block';stopSvg.style.display='none';});
 
-togglePosBtn.addEventListener('click', ()=>{
-  const toBottom = stickyPlayer.classList.toggle('bottom');
+/* Position toggle */
+document.getElementById('toggle-pos-btn').addEventListener('click',()=>{
+  const toBottom=stickyPlayer.classList.toggle('bottom');
   stickyPlayer.classList.toggle('top',!toBottom);
   toggleArrow.classList.toggle('bi-chevron-up',  toBottom);
   toggleArrow.classList.toggle('bi-chevron-down',!toBottom);
+  /* recheck widths after layout shift */
+  setTimeout(()=>{handleMarquee(titleMarquee,songTitleEl,titleCopy);handleMarquee(artistMarquee,artistNameEl,artistCopy);},100);
 });
 
-/* triple‑click anywhere toggles debug panel */
+/* triple‑click TOGGLE debug */
 let clicks=0;
 document.addEventListener('click',()=>{
   clicks++;setTimeout(()=>clicks=0,500);
-  if(clicks===3) debugInfo.style.display = debugInfo.style.display==='none' ? 'block':'none';
+  if(clicks===3) debugInfo.style.display = debugInfo.style.display==='none'?'block':'none';
 });
 
-/* initial run + refresh timer */
+/* handle resize */
+window.addEventListener('resize',()=>{handleMarquee(titleMarquee,songTitleEl,titleCopy);handleMarquee(artistMarquee,artistNameEl,artistCopy);});
+
+/* init */
 updateSongInfo();
 setInterval(updateSongInfo,10000);
 </script>

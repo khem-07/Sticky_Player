@@ -60,26 +60,33 @@ body{
 }
 /* ─── Marquee animation (left‑to‑right) ─── */
 /* ───  Marquee keyframes  ─── */
-@keyframes scroll-left {
-  0%   { transform: translateX(100%); }      /* start fully off‑screen right */
-  100% { transform: translateX(-100%); }     /* end fully off‑screen left  */
-}
-
-/* ───  Generic marquee class  ─── */
 .marquee {
+  height: 25px;
+  width: 420px;
+
+  overflow: hidden;
   position: relative;
-  display: inline-block;
-  white-space: nowrap;
-  /* ▼ pushes the first copy to the left, tucking it under the play button  */
-  padding-left: calc(3.6rem + 16px);         /* play‑btn width + its margin‑right */
-  margin-left: calc(-3.6rem - 16px);
-  animation: scroll-left 18s linear infinite;/* ← slower loop (was 12 s)    */
 }
 
-/* 2nd copy for seamless loop */
-.marquee::after {
-  content: attr(data-text);
-  padding-left: 2rem;                        /* gap between the two copies */
+.marquee div {
+  display: block;
+  width: 200%;
+  height: 30px;
+
+  position: absolute;
+  overflow: hidden;
+
+  animation: marquee 5s linear infinite;
+}
+
+.marquee span {
+  float: left;
+  width: 50%;
+}
+
+@keyframes marquee {
+  0% { left: 0; }
+  100% { left: -100%; }
 }
 
 
@@ -142,18 +149,6 @@ body{
     <i class="bi bi-chevron-up" id="toggle-arrow"></i>
   </button>
 </div>
-
-<!-- Debug panel (triple‑click anywhere to toggle) -->
-<div id="debug-info" class="debug-info" style="display:none">
-  <div><strong>Debug Info</strong></div>
-  <div>Updates: <span id="update-count">0</span></div>
-  <div>Last:   <span id="last-update">-</span></div>
-  <div>Status: <span id="api-status">-</span></div>
-  <div>Raw:    <span id="raw-data">-</span></div>
-  <button style="margin-top:5px;font-size:10px" onclick="debugInfo.style.display='none'">Hide</button>
-</div>
-
-<audio id="audio" preload="none"></audio>
 
 <script>
 /* ───────────────── Settings ───────────────── */

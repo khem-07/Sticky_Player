@@ -229,57 +229,52 @@ function applyMarquee(){
   resetMarquee(songTitleEl);
   resetMarquee(artistNameEl);
 
-  // remove old dynamic style tag
   const old = document.getElementById('dynamic-marquee-keyframes');
   if (old) old.remove();
 
-  // strip any duplicate text injected previously
   songTitleEl.innerHTML  = songTitleEl.textContent;
   artistNameEl.innerHTML = artistNameEl.textContent;
 
   requestAnimationFrame(()=>{
-    /* --- title marquee (L→R) --- */
-    const titleMask  = songTitleEl.parentElement;
-    const titleW     = songTitleEl.scrollWidth;
-    const titleMaskW = titleMask.clientWidth;
-
     let css = '';
 
-    if (titleW > titleMaskW){
+    /* ---------- Title (left‑to‑right) ---------- */
+    const titleMask  = songTitleEl.parentElement;
+    const titleW     = songTitleEl.scrollWidth;
+    if (titleW > titleMask.clientWidth){
       songTitleEl.innerHTML += ' <span class="marquee-copy">' + songTitleEl.textContent + '</span>';
       const distance = titleW + 20;
-      const speed    = 40;               // px per second
-      const dur      = distance / speed;
-
+      const dur = distance / 40; // 40 px/s
       css += `@keyframes title-marquee{0%{transform:translateX(0)}100%{transform:translateX(-${distance}px)}}`;
       songTitleEl.classList.add('marquee');
       songTitleEl.style.animation = `title-marquee ${dur}s linear infinite`;
     }
 
-    /* --- artist marquee (starts at chevron) --- */
+    /* ---------- Artist (start beyond chevron) ---------- */
     const artistMask  = artistNameEl.parentElement;
     const artistW     = artistNameEl.scrollWidth;
-    const artistMaskW = artistMask.clientWidth;
-
-    if (artistW > artistMaskW){
+    if (artistW > artistMask.clientWidth){
       artistNameEl.innerHTML += ' <span class="marquee-copy">' + artistNameEl.textContent + '</span>';
 
-      // distance from artist mask's left edge to chevron's left edge
+      // Where should the first frame begin?
       const chevronLeft = togglePosBtn.getBoundingClientRect().left;
       const maskLeft    = artistMask.getBoundingClientRect().left;
-      const startPos    = chevronLeft - maskLeft;         // px
 
-      // total scroll distance: the text width plus extra beyond the left
-      const scrollDist  = artistW + Math.abs(startPos) + 80;
-      const speed       = 40;
-      const durA        = scrollDist / speed;
+      /*  
+         startPos:
+           • offset so the *right edge* of artist name lines up 20 px to the right of the chevron.
+           • ensures artist text is fully outside, then slides in.
+      */
+      const startPos = chevronLeft - maskLeft + 20 + artistW;
+
+      const scrollDistance = startPos + artistW + 40; // extra padding at end
+      const dur = scrollDistance / 40; // 40 px/s
 
       css += `@keyframes artist-marquee{0%{transform:translateX(${startPos}px)}100%{transform:translateX(-${artistW + 20}px)}}`;
       artistNameEl.classList.add('marquee');
-      artistNameEl.style.animation = `artist-marquee ${durA}s linear infinite`;
+      artistNameEl.style.animation = `artist-marquee ${dur}s linear infinite`;
     }
 
-    /* inject combined keyframes (if any) */
     if (css){
       const style = document.createElement('style');
       style.id = 'dynamic-marquee-keyframes';
@@ -330,11 +325,8 @@ audio.addEventListener('error', ()=>{ isPlaying=false; playSvg.style.display='bl
 togglePosBtn.addEventListener('click', ()=>{
   const toBottom = stickyPlayer.classList.toggle('bottom');
   stickyPlayer.classList.toggle('top', !toBottom);
-
   toggleArrow.classList.toggle('bi-chevron-up',   toBottom);
   toggleArrow.classList.toggle('bi-chevron-down', !toBottom);
-
-  // re‑compute marquee after layout shift
   setTimeout(applyMarquee, 100);
 });
 
@@ -355,5 +347,6 @@ window.addEventListener('resize', ()=> setTimeout(applyMarquee,100));
 updateSongInfo();
 setInterval(updateSongInfo, 10000);
 </script>
+
 </body>
 </html>

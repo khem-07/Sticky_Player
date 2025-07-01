@@ -257,54 +257,100 @@ function resetMarquee(element) {
 }
 
 function applyMarquee() {
-  // ...reset code...
+    // Reset any existing marquee animations
+    resetMarquee(songTitleEl);
+    resetMarquee(artistNameEl);
 
-  requestAnimationFrame(() => {
-    const titleMask = songTitleEl.parentElement;
-    const originalTitleWidth = songTitleEl.scrollWidth;
-    const titleMaskWidth = titleMask.clientWidth;
+    // Remove old dynamic styles
+    const oldStyle = document.getElementById("dynamic-marquee-keyframes");
+    if (oldStyle) oldStyle.remove();
 
-    let keyframesCSS = '';
+    // Remove duplicated content first to get accurate initial scrollWidth
+    songTitleEl.innerHTML = songTitleEl.textContent.split(' <span class="marquee-copy">')[0] || songTitleEl.textContent;
+    artistNameEl.innerHTML = artistNameEl.textContent.split(' <span class="marquee-copy">')[0] || artistNameEl.textContent;
 
-    // --- Title Marquee ---
-    if (originalTitleWidth > titleMaskWidth) {
-      // Start from extreme right on small screens
-      let startOffset = 0;
-      if (window.innerWidth <= 600) {
-        startOffset = window.innerWidth;
-      } else {
-        startOffset = togglePosBtn.offsetLeft + togglePosBtn.offsetWidth;
-      }
+    // Wait one frame for layout to settle and get accurate dimensions
+    requestAnimationFrame(() => {
+        const titleMask = songTitleEl.parentElement;
+        const artistMask = artistNameEl.parentElement;
+        // We no longer need stickyPlayerWidth for calculating start/end for seamless loop
+        // as the animation is relative to the text's own width.
 
-      songTitleEl.innerHTML = songTitleEl.textContent + ' <span class="marquee-copy">' + songTitleEl.textContent + '</span>';
-      const duplicatedTitleWidth = songTitleEl.scrollWidth;
-      const scrollDistanceTitle = duplicatedTitleWidth - titleMaskWidth + startOffset;
-      const speed = 40;
-      const titleDuration = scrollDistanceTitle / speed;
+        let keyframesCSS = '';
 
-      keyframesCSS += `
-      @keyframes title-marquee {
-        0% { transform: translateX(${startOffset}px); }
-        100% { transform: translateX(-${scrollDistanceTitle}px); }
-      }`;
+        // --- Title Marquee ---
+        const originalTitleWidth = songTitleEl.scrollWidth;
+        const titleMaskWidth = titleMask.clientWidth;
 
-      songTitleEl.classList.add("marquee");
-      songTitleEl.style.animation = `title-marquee ${titleDuration}s linear infinite`;
-    } else {
-      songTitleEl.classList.remove("marquee");
-      songTitleEl.style.animation = "";
-      songTitleEl.innerHTML = songTitleEl.textContent;
-    }
+        if (originalTitleWidth > titleMaskWidth) {
+            // Duplicate the content for seamless loop
+            songTitleEl.innerHTML = songTitleEl.textContent + ' <span class="marquee-copy">' + songTitleEl.textContent + '</span>';
 
-    // ...repeat for artistNameEl if needed...
+            // Now get the width of the duplicated content
+            const duplicatedTitleWidth = songTitleEl.scrollWidth; // This will be roughly double originalWidth
+            const scrollDistanceTitle = originalTitleWidth * 1.5; // We scroll exactly one instance's width
 
-    if (keyframesCSS) {
-      const style = document.createElement("style");
-      style.id = "dynamic-marquee-keyframes";
-      style.textContent = keyframesCSS;
-      document.head.appendChild(style);
-    }
-  });
+            // Speed: pixels per second. Adjust as desired.
+            const speed = 40; // Pixels per second
+            const titleDuration = scrollDistanceTitle / speed; // Time to scroll one instance's width
+
+            keyframesCSS += `
+            @keyframes title-marquee {
+                0% { transform: translateX(0); }
+                100% { transform: translateX(-${scrollDistanceTitle}px); }
+            }`;
+
+            // Apply title animation
+            songTitleEl.classList.add("marquee");
+            songTitleEl.style.animation = `title-marquee ${titleDuration}s linear infinite`;
+        } else {
+            // Ensure no extra content if not marqeeing
+            songTitleEl.classList.remove("marquee");
+            songTitleEl.style.animation = "";
+            songTitleEl.innerHTML = songTitleEl.textContent; // Clean up any lingering duplicates
+        }
+
+
+        // --- Artist Marquee ---
+        const originalArtistWidth = artistNameEl.scrollWidth;
+        const artistMaskWidth = artistMask.clientWidth; // This is max-width 170px for artist
+
+        if (originalArtistWidth > artistMaskWidth) {
+            // Duplicate the content for seamless loop
+            artistNameEl.innerHTML = artistNameEl.textContent + ' <span class="marquee-copy">' + artistNameEl.textContent + '</span>';
+
+            const duplicatedArtistWidth = artistNameEl.scrollWidth; // This will be roughly double originalWidth
+            const scrollDistanceArtist = originalArtistWidth * 1.5; // We scroll exactly one instance's width
+
+            // Speed: pixels per second. Adjust as desired.
+            const speed = 40; // Pixels per second
+            const artistDuration = scrollDistanceArtist / speed; // Time to scroll one instance's width
+
+            keyframesCSS += `
+            @keyframes artist-marquee {
+                0% { transform: translateX(0); }
+                100% { transform: translateX(-${scrollDistanceArtist}px); }
+            }`;
+
+            // Apply artist animation
+            artistNameEl.classList.add("marquee");
+            artistNameEl.style.animation = `artist-marquee ${artistDuration}s linear infinite`;
+        } else {
+            // Ensure no extra content if not marqeeing
+            artistNameEl.classList.remove("marquee");
+            artistNameEl.style.animation = "";
+            artistNameEl.innerHTML = artistNameEl.textContent; // Clean up any lingering duplicates
+        }
+
+
+        // Apply animations if we have keyframes
+        if (keyframesCSS) {
+            const style = document.createElement("style");
+            style.id = "dynamic-marquee-keyframes";
+            style.textContent = keyframesCSS;
+            document.head.appendChild(style);
+        }
+    });
 }
 
 

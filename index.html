@@ -57,8 +57,28 @@ body{
 #artist-name{
   font-size:.98em;opacity:.75;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  text-align:right;
 }
+/* ─── Marquee animation (left‑to‑right) ─── */
+@keyframes scroll-left {
+  0%   { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+/* Apply to any element with `.marquee` */
+.marquee {
+  display: inline-block;
+  white-space: nowrap;
+  /* duplicate the text once so the scroll is seamless */
+  position: relative;
+  animation: scroll-left 12s linear infinite;
+}
+
+/* Duplicate copy using a pseudo‑element */
+.marquee::after {
+  content: attr(data-text);          /* repeat the same text */
+  padding-left: 2rem;                /* little gap between copies */
+}
+
 
 #toggle-pos-btn{
   background:none;border:none;
@@ -109,8 +129,8 @@ body{
 
   <!-- Song / artist -->
   <div id="song-info">
-    <span id="song-title">Loading…</span>
-    <span id="artist-name"></span>
+    <span id="song-title" class="marquee">Loading…</span>
+    <span id="artist-name" class="marquee"></span>
   </div>
 
   <!-- Position toggle -->

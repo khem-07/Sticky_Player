@@ -280,31 +280,36 @@ function applyMarquee() {
 
         let keyframesCSS = '';
 
-        // --- Title Marquee (Left to Right scroll) ---
-        const originalTitleWidth = songTitleEl.scrollWidth;
-        const titleMaskWidth = titleMask.clientWidth;
+       // --- Artist Marquee (Starts from chevron icon) ---
+const originalArtistWidth = artistNameEl.scrollWidth;
+const artistMask = artistNameEl.parentElement;
+const artistMaskWidth = artistMask.clientWidth;
 
-        if (originalTitleWidth > titleMaskWidth) {
-            // Duplicate the content for seamless loop
-            songTitleEl.innerHTML = songTitleEl.textContent + ' <span class="marquee-copy">' + songTitleEl.textContent + '</span>';
+if (originalArtistWidth > artistMaskWidth) {
+  artistNameEl.innerHTML = artistNameEl.textContent + ' <span class="marquee-copy">' + artistNameEl.textContent + '</span>';
 
-            const scrollDistanceTitle = originalTitleWidth + 20; // Add some spacing
-            const speed = 40; // Pixels per second
-            const titleDuration = scrollDistanceTitle / speed;
+  const chevronLeft = togglePosBtn.getBoundingClientRect().left;
+  const maskLeft = artistMask.getBoundingClientRect().left;
+  const startPosition = chevronLeft - maskLeft;
 
-            keyframesCSS += `
-            @keyframes title-marquee {
-                0% { transform: translateX(0); }
-                100% { transform: translateX(-${scrollDistanceTitle}px); }
-            }`;
+  const scrollDistanceArtist = originalArtistWidth + Math.abs(startPosition) + 80;
+  const speed = 40; // px/sec
+  const artistDuration = scrollDistanceArtist / speed;
 
-            songTitleEl.classList.add("marquee");
-            songTitleEl.style.animation = `title-marquee ${titleDuration}s linear infinite`;
-        } else {
-            songTitleEl.classList.remove("marquee");
-            songTitleEl.style.animation = "";
-            songTitleEl.innerHTML = songTitleEl.textContent;
-        }
+  keyframesCSS += `
+    @keyframes artist-marquee {
+      0% { transform: translateX(${startPosition}px); }
+      100% { transform: translateX(-${originalArtistWidth + 20}px); }
+    }`;
+
+  artistNameEl.classList.add("marquee");
+  artistNameEl.style.animation = `artist-marquee ${artistDuration}s linear infinite`;
+} else {
+  artistNameEl.classList.remove("marquee");
+  artistNameEl.style.animation = "";
+  artistNameEl.innerHTML = artistNameEl.textContent;
+}
+
 
         // --- Artist Marquee (Right to Left scroll) ---
         const originalArtistWidth = artistNameEl.scrollWidth;

@@ -324,7 +324,7 @@ function applyMarquee() {
             keyframesCSS += `
             @keyframes artist-marquee {
                 0% { transform: translateX(${Math.abs(startPosition)}px); }
-                100% { transform: translateX(-${originalArtistWidth + 20}px); }
+                100% { transform: translateX(-${originalArtistWidth + 80}px); }
             }`;
 
             artistNameEl.classList.add("marquee");

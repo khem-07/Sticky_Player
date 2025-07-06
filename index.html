@@ -64,47 +64,35 @@ body {
   flex-direction: column;
   gap: 2px;
 }
-.title-mask {
-  display: block;
-  position: relative;
-  height: 1.5em;
+.title-mask,
+.artist-mask {
+  display: flex;
+  align-items: center;
+  min-height: 1.6em;
+  /* No fixed height! */
   mask-image: linear-gradient(to right, black 80%, transparent 100%);
   -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
+  overflow: hidden;
 }
-#song-title {
+#song-title,
+#artist-name {
   font-family: 'Poppins', Arial, sans-serif;
   font-weight: 400;
   font-size: 1.3rem;
+  line-height: 1.25;
   overflow: hidden;
   white-space: nowrap;
   letter-spacing: 0.5px;
-  line-height: 1.1;
   display: inline-block;
-  position: relative;
   vertical-align: middle;
-}
-#song-title.marquee {
-  will-change: transform;
-}
-.artist-mask {
-  display: block;
-  position: relative;
-  max-width: calc(100% - 60px); /* Adjusted to span from near toggle button to play button */
-  height: 1.2em;
-  mask-image: linear-gradient(to right, black 80%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
+  /* Remove position: relative for better baseline alignment */
 }
 #artist-name {
-  font-family: 'Poppins', Arial, sans-serif;
-  font-size: 0.98em;
+  font-size: 1.05rem;
   opacity: 0.75;
-  overflow: hidden;
-  white-space: nowrap;
   letter-spacing: 0.2px;
-  display: inline-block;
-  position: relative;
-  vertical-align: middle;
 }
+#song-title.marquee,
 #artist-name.marquee {
   will-change: transform;
 }
@@ -142,7 +130,6 @@ body {
   #play-stop-btn { font-size: 1.5rem; margin-right: 10px; }
   #toggle-pos-btn { font-size: 1.3rem; margin-left: 8px; }
   #song-title { font-size: 1.05rem; }
-  .artist-mask { max-width: calc(100% - 40px); } /* Adjusted for smaller screens */
   #artist-name { font-size: 0.93em; }
   .debug-info { display: none; }
 }
@@ -245,7 +232,6 @@ async function updateSongInfo () {
     artistNameEl.textContent = "";
     apiStatusEl.textContent  = "Failed: " + err.message;
 
-    // Reset marquee for both elements on error
     resetMarquee(songTitleEl);
     resetMarquee(artistNameEl);
   }
@@ -257,7 +243,6 @@ function resetMarquee(element) {
 }
 
 function applyMarquee() {
-    // Reset any existing marquee animations
     resetMarquee(songTitleEl);
     resetMarquee(artistNameEl);
 
@@ -269,7 +254,6 @@ function applyMarquee() {
     songTitleEl.innerHTML = songTitleEl.textContent.split(' <span class="marquee-copy">')[0] || songTitleEl.textContent;
     artistNameEl.innerHTML = artistNameEl.textContent.split(' <span class="marquee-copy">')[0] || artistNameEl.textContent;
 
-    // Wait one frame for layout to settle and get accurate dimensions
     requestAnimationFrame(() => {
         const titleMask = songTitleEl.parentElement;
         const artistMask = artistNameEl.parentElement;
@@ -281,24 +265,15 @@ function applyMarquee() {
         const titleMaskWidth = titleMask.clientWidth;
 
         if (originalTitleWidth > titleMaskWidth) {
-            // Duplicate the content for seamless loop
             songTitleEl.innerHTML = songTitleEl.textContent + ' <span class="marquee-copy">' + songTitleEl.textContent + '</span>';
-
-            // Now get the width of the duplicated content
-            const duplicatedTitleWidth = songTitleEl.scrollWidth;
             const scrollDistanceTitle = originalTitleWidth;
-
-            // Speed: pixels per second
             const speed = 40;
             const titleDuration = scrollDistanceTitle / speed;
-
             keyframesCSS += `
             @keyframes title-marquee {
                 0% { transform: translateX(0); }
                 100% { transform: translateX(-${scrollDistanceTitle}px); }
             }`;
-
-            // Apply title animation
             songTitleEl.classList.add("marquee");
             songTitleEl.style.animation = `title-marquee ${titleDuration}s linear infinite`;
         } else {
@@ -312,23 +287,15 @@ function applyMarquee() {
         const artistMaskWidth = artistMask.clientWidth;
 
         if (originalArtistWidth > artistMaskWidth) {
-            // Duplicate the content for seamless loop
             artistNameEl.innerHTML = artistNameEl.textContent + ' <span class="marquee-copy">' + artistNameEl.textContent + '</span>';
-
-            const duplicatedArtistWidth = artistNameEl.scrollWidth;
             const scrollDistanceArtist = originalArtistWidth;
-
-            // Speed: pixels per second
             const speed = 40;
             const artistDuration = scrollDistanceArtist / speed;
-
             keyframesCSS += `
             @keyframes artist-marquee {
                 0% { transform: translateX(0); }
                 100% { transform: translateX(-${scrollDistanceArtist}px); }
             }`;
-
-            // Apply artist animation
             artistNameEl.classList.add("marquee");
             artistNameEl.style.animation = `artist-marquee ${artistDuration}s linear infinite`;
         } else {
@@ -337,7 +304,6 @@ function applyMarquee() {
             artistNameEl.innerHTML = artistNameEl.textContent;
         }
 
-        // Apply animations if we have keyframes
         if (keyframesCSS) {
             const style = document.createElement("style");
             style.id = "dynamic-marquee-keyframes";
@@ -407,8 +373,6 @@ togglePosBtn.addEventListener("click", () => {
 
   toggleArrow.classList.toggle("bi-chevron-up",   isBottom);
   toggleArrow.classList.toggle("bi-chevron-down", !isBottom);
-  
-  // Reapply marquee after position change
   setTimeout(applyMarquee, 100);
 });
 
@@ -421,7 +385,6 @@ document.addEventListener("click", () => {
   }
 });
 
-// Reapply marquee on window resize
 window.addEventListener('resize', () => {
   setTimeout(applyMarquee, 100);
 });

@@ -51,7 +51,6 @@ body {
   outline: none;
   display: flex;
   align-items: center;
-  flex-shrink: 0;
 }
 #play-stop-btn svg {
   width: 3.2rem;
@@ -64,15 +63,16 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  overflow: hidden;
 }
 .title-mask,
 .artist-mask {
   display: flex;
   align-items: center;
   min-height: 1.6em;
+  /* No fixed height! */
+  mask-image: linear-gradient(to right, black 80%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
   overflow: hidden;
-  position: relative;
 }
 #song-title,
 #artist-name {
@@ -80,34 +80,21 @@ body {
   font-weight: 400;
   font-size: 1.3rem;
   line-height: 1.25;
+  overflow: hidden;
   white-space: nowrap;
   letter-spacing: 0.5px;
   display: inline-block;
   vertical-align: middle;
-  position: relative;
-  transition: transform 0.5s ease-in-out;
+  /* Remove position: relative for better baseline alignment */
 }
 #artist-name {
   font-size: 1.05rem;
   opacity: 0.75;
   letter-spacing: 0.2px;
 }
-.marquee-container {
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  width: 100%;
-}
-.marquee-content {
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-  animation-fill-mode: forwards;
-}
-.marquee-gap {
-  margin-right: 3em;
+#song-title.marquee,
+#artist-name.marquee {
+  will-change: transform;
 }
 #toggle-pos-btn {
   background: none;
@@ -120,7 +107,6 @@ body {
   display: flex;
   align-items: center;
   transition: transform 0.2s;
-  flex-shrink: 0;
 }
 #toggle-arrow {
   opacity: 0.7;
@@ -171,16 +157,8 @@ body {
     </svg>
   </button>
   <div id="song-info">
-    <div class="artist-mask">
-      <div class="marquee-container">
-        <span id="artist-name" class="marquee-content"></span>
-      </div>
-    </div>
-    <div class="title-mask">
-      <div class="marquee-container">
-        <span id="song-title" class="marquee-content">Loading...</span>
-      </div>
-    </div>
+    <span class="artist-mask"><span id="artist-name"></span></span>
+    <span class="title-mask"><span id="song-title">Loading...</span></span>
   </div>
   <button id="toggle-pos-btn" aria-label="Toggle position">
     <i class="bi bi-chevron-up" id="toggle-arrow"></i>
@@ -221,7 +199,6 @@ const rawDataEl     = document.getElementById("raw-data");
 
 let isPlaying   = false;
 let updateCount = 0;
-let marqueeAnimationId = null;
 
 async function fetchSongTitle () {
   const resp = await fetch(SONG_API + '?_=' + Date.now());
@@ -255,96 +232,85 @@ async function updateSongInfo () {
     artistNameEl.textContent = "";
     apiStatusEl.textContent  = "Failed: " + err.message;
 
-    resetMarquee();
+    resetMarquee(songTitleEl);
+    resetMarquee(artistNameEl);
   }
 }
 
-function resetMarquee() {
-  // Clear existing animations
-  if (marqueeAnimationId) {
-    cancelAnimationFrame(marqueeAnimationId);
-  }
-  
-  // Remove animation styles
-  songTitleEl.style.animation = '';
-  artistNameEl.style.animation = '';
-  
-  // Remove dynamic CSS for both elements
-  const oldTitleStyle = document.getElementById("dynamic-marquee-keyframes-title");
-  const oldArtistStyle = document.getElementById("dynamic-marquee-keyframes-artist");
-  if (oldTitleStyle) oldTitleStyle.remove();
-  if (oldArtistStyle) oldArtistStyle.remove();
-  
-  // Reset content
-  songTitleEl.innerHTML = songTitleEl.textContent;
-  artistNameEl.innerHTML = artistNameEl.textContent;
+function resetMarquee(element) {
+  element.classList.remove("marquee");
+  element.style.animation = "";
 }
 
 function applyMarquee() {
-  resetMarquee();
-  
-  // Wait for content to render
-  marqueeAnimationId = requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      setupMarqueeForElement(songTitleEl, 'title');
-      setupMarqueeForElement(artistNameEl, 'artist');
-    });
-  });
-}
+    resetMarquee(songTitleEl);
+    resetMarquee(artistNameEl);
 
-function setupMarqueeForElement(element, type) {
-  const container = element.closest('.marquee-container');
-  if (!container) return;
-  
-  const containerWidth = container.offsetWidth;
-  const contentWidth = element.scrollWidth;
-  
-  // Only apply marquee if content is wider than container
-  if (contentWidth > containerWidth) {
-    const originalText = element.textContent;
-    
-    // Create seamless marquee content - duplicate text with minimal gap
-    element.innerHTML = `
-      <span class="marquee-text">${originalText}</span>
-      <span class="marquee-text" style="margin-left: 2em;">${originalText}</span>
-    `;
-    
-    // Get the width of single text content
-    const singleTextWidth = contentWidth;
-    const gapWidth = 32; // 2em in pixels (approximate)
-    
-    // Calculate animation parameters for seamless loop
-    const totalScrollDistance = singleTextWidth + gapWidth;
-    const speed = 60; // pixels per second
-    const duration = totalScrollDistance / speed;
-    
-    // Create keyframes for seamless loop
-    const keyframeName = `${type}-marquee-${Date.now()}`;
-    const keyframesCSS = `
-      @keyframes ${keyframeName} {
-        0% { 
-          transform: translateX(0); 
+    // Remove old dynamic styles
+    const oldStyle = document.getElementById("dynamic-marquee-keyframes");
+    if (oldStyle) oldStyle.remove();
+
+    // Remove duplicated content first to get accurate initial scrollWidth
+    songTitleEl.innerHTML = songTitleEl.textContent.split(' <span class="marquee-copy">')[0] || songTitleEl.textContent;
+    artistNameEl.innerHTML = artistNameEl.textContent.split(' <span class="marquee-copy">')[0] || artistNameEl.textContent;
+
+    requestAnimationFrame(() => {
+        const titleMask = songTitleEl.parentElement;
+        const artistMask = artistNameEl.parentElement;
+
+        let keyframesCSS = '';
+
+        // --- Title Marquee ---
+        const originalTitleWidth = songTitleEl.scrollWidth;
+        const titleMaskWidth = titleMask.clientWidth;
+
+        if (originalTitleWidth > titleMaskWidth) {
+            songTitleEl.innerHTML = songTitleEl.textContent + ' <span class="marquee-copy">' + songTitleEl.textContent + '</span>';
+            const scrollDistanceTitle = originalTitleWidth;
+            const speed = 40;
+            const titleDuration = scrollDistanceTitle / speed;
+            keyframesCSS += `
+            @keyframes title-marquee {
+                0% { transform: translateX(0); }
+                100% { transform: translateX(-${scrollDistanceTitle}px); }
+            }`;
+            songTitleEl.classList.add("marquee");
+            songTitleEl.style.animation = `title-marquee ${titleDuration}s linear infinite`;
+        } else {
+            songTitleEl.classList.remove("marquee");
+            songTitleEl.style.animation = "";
+            songTitleEl.innerHTML = songTitleEl.textContent;
         }
-        100% { 
-          transform: translateX(-${totalScrollDistance}px); 
+
+        // --- Artist Marquee ---
+        const originalArtistWidth = artistNameEl.scrollWidth;
+        const artistMaskWidth = artistMask.clientWidth;
+
+        if (originalArtistWidth > artistMaskWidth) {
+            artistNameEl.innerHTML = artistNameEl.textContent + ' <span class="marquee-copy">' + artistNameEl.textContent + '</span>';
+            const scrollDistanceArtist = originalArtistWidth;
+            const speed = 40;
+            const artistDuration = scrollDistanceArtist / speed;
+            keyframesCSS += `
+            @keyframes artist-marquee {
+                0% { transform: translateX(0); }
+                100% { transform: translateX(-${scrollDistanceArtist}px); }
+            }`;
+            artistNameEl.classList.add("marquee");
+            artistNameEl.style.animation = `artist-marquee ${artistDuration}s linear infinite`;
+        } else {
+            artistNameEl.classList.remove("marquee");
+            artistNameEl.style.animation = "";
+            artistNameEl.innerHTML = artistNameEl.textContent;
         }
-      }
-    `;
-    
-    // Add CSS to document
-    const style = document.createElement("style");
-    style.id = `dynamic-marquee-keyframes-${type}`;
-    style.textContent = keyframesCSS;
-    document.head.appendChild(style);
-    
-    // Apply animation with delay for smooth start
-    setTimeout(() => {
-      element.style.animation = `${keyframeName} ${duration}s linear infinite`;
-    }, 100);
-  } else {
-    // Content fits, no marquee needed
-    element.innerHTML = element.textContent;
-  }
+
+        if (keyframesCSS) {
+            const style = document.createElement("style");
+            style.id = "dynamic-marquee-keyframes";
+            style.textContent = keyframesCSS;
+            document.head.appendChild(style);
+        }
+    });
 }
 
 playBtn.addEventListener("click", async () => {
@@ -407,7 +373,7 @@ togglePosBtn.addEventListener("click", () => {
 
   toggleArrow.classList.toggle("bi-chevron-up",   isBottom);
   toggleArrow.classList.toggle("bi-chevron-down", !isBottom);
-  setTimeout(applyMarquee, 300);
+  setTimeout(applyMarquee, 100);
 });
 
 let clickCount = 0;
@@ -420,10 +386,9 @@ document.addEventListener("click", () => {
 });
 
 window.addEventListener('resize', () => {
-  setTimeout(applyMarquee, 200);
+  setTimeout(applyMarquee, 100);
 });
 
-// Initialize
 updateSongInfo();
 setInterval(updateSongInfo, 10000);
 </script>

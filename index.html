@@ -74,41 +74,41 @@ body {
   overflow: hidden;
   position: relative;
 }
-
-/* Marquee Styles */
-.marquee {
-  height: 25px;
-  width: 420px;
-  overflow: hidden;
-  position: relative;
-  background: transparent;
-  color: #fff;
-  border-radius: 2px;
-}
-.marquee div {
-  display: block;
-  width: 200%; /* double width for seamless looping */
-  height: 25px;
-  position: absolute;
-  animation: marquee 7s linear infinite;
+#song-title,
+#artist-name {
+  font-family: 'Poppins', Arial, sans-serif;
+  font-weight: 400;
+  font-size: 1.3rem;
+  line-height: 1.25;
   white-space: nowrap;
-}
-.marquee span {
-  float: left;
-  width: 50%;
-  font: 1rem/25px 'Poppins', Arial, sans-serif;
   letter-spacing: 0.5px;
-  padding-left: 10px;
-  opacity: 0.9;
+  display: inline-block;
+  vertical-align: middle;
+  position: relative;
+  transition: transform 0.5s ease-in-out;
 }
-.artist-mask .marquee { height: 21px; }
-.artist-mask .marquee div { height: 21px; }
-.artist-mask .marquee span { font-size: 0.95em; opacity: 0.7; }
-@keyframes marquee {
-  0%   { left: 0; }
-  100% { left: -100%; }
+#artist-name {
+  font-size: 1.05rem;
+  opacity: 0.75;
+  letter-spacing: 0.2px;
 }
-
+.marquee-container {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  width: 100%;
+}
+.marquee-content {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-fill-mode: forwards;
+}
+.marquee-gap {
+  margin-right: 3em;
+}
 #toggle-pos-btn {
   background: none;
   border: none;
@@ -143,7 +143,8 @@ body {
   #sticky-player { padding: 8px 8px; }
   #play-stop-btn { font-size: 1.5rem; margin-right: 10px; }
   #toggle-pos-btn { font-size: 1.3rem; margin-left: 8px; }
-  .marquee { width: 100%; }
+  #song-title { font-size: 1.05rem; }
+  #artist-name { font-size: 0.93em; }
   .debug-info { display: none; }
 }
 </style>
@@ -171,19 +172,15 @@ body {
   </button>
   <div id="song-info">
     <div class="artist-mask">
-      <div class="marquee" id="artist-marquee">
-        <div>
-          <span id="artist-name">Ramasha Media</span>
-          <span id="artist-name-dup">Ramasha Media</span>
-        </div>
+      <div class="marquee-container">
+        <span id="artist-name" class="marquee-content"></span>
+        <span id="artist-name" class="marquee-content"></span>
       </div>
     </div>
     <div class="title-mask">
-      <div class="marquee" id="title-marquee">
-        <div>
-          <span id="song-title">Loading...</span>
-          <span id="song-title-dup">Loading...</span>
-        </div>
+      <div class="marquee-container">
+        <span id="song-title" class="marquee-content">Loading...</span>
+        <span id="song-title" class="marquee-content">Loading...</span>
       </div>
     </div>
   </div>
@@ -212,6 +209,8 @@ const playBtn      = document.getElementById("play-stop-btn");
 const playSvg      = document.getElementById("play-svg");
 const stopSvg      = document.getElementById("stop-svg");
 const loadingSvg   = document.getElementById("loading-svg");
+const songTitleEl  = document.getElementById("song-title");
+const artistNameEl = document.getElementById("artist-name");
 const stickyPlayer = document.getElementById("sticky-player");
 const togglePosBtn = document.getElementById("toggle-pos-btn");
 const toggleArrow  = document.getElementById("toggle-arrow");
@@ -224,12 +223,7 @@ const rawDataEl     = document.getElementById("raw-data");
 
 let isPlaying   = false;
 let updateCount = 0;
-
-// Update both marquee spans (for seamless scroll)
-function updateMarqueeText(id, text) {
-  document.getElementById(id).textContent = text;
-  document.getElementById(id + '-dup').textContent = text;
-}
+let marqueeAnimationId = null;
 
 async function fetchSongTitle () {
   const resp = await fetch(SONG_API + '?_=' + Date.now());
@@ -254,12 +248,104 @@ async function updateSongInfo () {
     apiStatusEl.textContent = "Success";
     rawDataEl.textContent   = (data.raw || '').substring(0, 30) + "…";
 
-    updateMarqueeText('song-title', data.title  || "No track information");
-    updateMarqueeText('artist-name', data.artist || "Ramasha Media");
+    songTitleEl.textContent  = data.title  || "No track information";
+    artistNameEl.textContent = data.artist || "Ramasha Media";
+
+    applyMarquee();
   } catch (err) {
-    updateMarqueeText('song-title', err.message === "No Title." ? "No Title." : "Error Loading.");
-    updateMarqueeText('artist-name', "");
+    songTitleEl.textContent  = err.message === "No Title." ? "No Title." : "Error Loading.";
+    artistNameEl.textContent = "";
     apiStatusEl.textContent  = "Failed: " + err.message;
+
+    resetMarquee();
+  }
+}
+
+function resetMarquee() {
+  // Clear existing animations
+  if (marqueeAnimationId) {
+    cancelAnimationFrame(marqueeAnimationId);
+  }
+  
+  // Remove animation styles
+  songTitleEl.style.animation = '';
+  artistNameEl.style.animation = '';
+  
+  // Remove dynamic CSS for both elements
+  const oldTitleStyle = document.getElementById("dynamic-marquee-keyframes-title");
+  const oldArtistStyle = document.getElementById("dynamic-marquee-keyframes-artist");
+  if (oldTitleStyle) oldTitleStyle.remove();
+  if (oldArtistStyle) oldArtistStyle.remove();
+  
+  // Reset content
+  songTitleEl.innerHTML = songTitleEl.textContent;
+  artistNameEl.innerHTML = artistNameEl.textContent;
+}
+
+function applyMarquee() {
+  resetMarquee();
+  
+  // Wait for content to render
+  marqueeAnimationId = requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      setupMarqueeForElement(songTitleEl, 'title');
+      setupMarqueeForElement(artistNameEl, 'artist');
+    });
+  });
+}
+
+function setupMarqueeForElement(element, type) {
+  const container = element.closest('.marquee-container');
+  if (!container) return;
+  
+  const containerWidth = container.offsetWidth;
+  const contentWidth = element.scrollWidth;
+  
+  // Only apply marquee if content is wider than container
+  if (contentWidth > containerWidth) {
+    const originalText = element.textContent;
+    
+    // Create seamless marquee content - duplicate text with minimal gap
+    element.innerHTML = `
+      <span class="marquee-text">${originalText}</span>
+      <span class="marquee-text" style="margin-left: 2em;">${originalText}</span>
+    `;
+    
+    // Get the width of single text content
+    const singleTextWidth = contentWidth;
+    const gapWidth = 32; // 2em in pixels (approximate)
+    
+    // Calculate animation parameters for seamless loop
+    const totalScrollDistance = singleTextWidth + gapWidth;
+    const speed = 60; // pixels per second
+    const duration = totalScrollDistance / speed;
+    
+    // Create keyframes for seamless loop
+    const keyframeName = `${type}-marquee-${Date.now()}`;
+    const keyframesCSS = `
+      @keyframes ${keyframeName} {
+        0% { 
+          transform: translateX(0); 
+        }
+        100% { 
+          transform: translateX(-${totalScrollDistance}px); 
+        }
+      }
+    `;
+    
+    // Add CSS to document
+    const style = document.createElement("style");
+    style.id = `dynamic-marquee-keyframes-${type}`;
+    style.textContent = keyframesCSS;
+    document.head.appendChild(style);
+    
+    // Apply animation with delay for smooth start
+    setTimeout(() => {
+      element.style.animation = `${keyframeName} ${duration}s linear infinite`;
+    }, 100);
+  } else {
+    // Content fits, no marquee needed
+    element.innerHTML = element.textContent;
   }
 }
 
@@ -323,6 +409,7 @@ togglePosBtn.addEventListener("click", () => {
 
   toggleArrow.classList.toggle("bi-chevron-up",   isBottom);
   toggleArrow.classList.toggle("bi-chevron-down", !isBottom);
+  setTimeout(applyMarquee, 300);
 });
 
 let clickCount = 0;
@@ -335,7 +422,7 @@ document.addEventListener("click", () => {
 });
 
 window.addEventListener('resize', () => {
-  // No JS marquee resize needed with this CSS approach!
+  setTimeout(applyMarquee, 200);
 });
 
 // Initialize

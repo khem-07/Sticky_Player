@@ -10,77 +10,39 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
   <style>
     /* ─────────── 1.  Basic theme tokens ─────────── */
-    :root {
-      --fg: #fff;
-      --bg: #222;
+    :root{
+      --fg:#fff;
+      --bg:#222;
     }
-
-    body {
-      margin: 0;
-      font-family: "Poppins", Arial, sans-serif;
-      background: #f7f7f7;
-    }
+    body{margin:0;font-family:"Poppins",Arial,sans-serif;background:#f7f7f7}
 
     /* ─────────── 2.  Sticky player shell ─────────── */
-    #sticky-player {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 1000;
-
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      padding: 12px 16px;
-
-      color: var(--fg);
-      background: var(--bg);
-      box-shadow: 0 0 10px #0002;
-      transition: top 0.3s, bottom 0.3s;
-    }
-
-    #sticky-player.top   { top: 0;   bottom: auto; }
-    #sticky-player.bottom{ bottom: 0; top:    auto; }
+    #sticky-player{position:fixed;left:0;right:0;bottom:0;z-index:1000;display:flex;align-items:center;gap:16px;padding:12px 16px;color:var(--fg);background:var(--bg);box-shadow:0 0 10px #0002;transition:top .3s,bottom .3s}
+    #sticky-player.top{top:0;bottom:auto}
+    #sticky-player.bottom{bottom:0;top:auto}
 
     /* ─────────── 3.  Controls ─────────── */
-    #play-stop-btn,#toggle-pos-btn {
-      display: flex;
-      align-items: center;
-      background: none;
-      border: none;
-      color: var(--fg);
-      cursor: pointer;
-      outline: none;
-    }
-
-    #play-stop-btn  { font-size: 2.2rem; }
-    #toggle-pos-btn { font-size: 1.7rem; margin-left: auto; }
-    #play-stop-btn svg { width: 3.2rem; height: 3.2rem; }
+    #play-stop-btn,#toggle-pos-btn{display:flex;align-items:center;background:none;border:none;color:var(--fg);cursor:pointer;outline:none}
+    #play-stop-btn{font-size:2.2rem}
+    #toggle-pos-btn{font-size:1.7rem;margin-left:auto}
+    #play-stop-btn svg{width:3.2rem;height:3.2rem}
 
     /* ─────────── 4.  Title / artist ─────────── */
-    #song-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    #song-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+    .track-line{height:1.35em;line-height:1.35em;font-weight:400;white-space:nowrap;letter-spacing:.4px;overflow:hidden}
+    #artist-name{opacity:.75;font-size:1.05rem}
 
-    .track-line { font-weight: 400; white-space: nowrap; letter-spacing: 0.4px; overflow: hidden; }
-    #artist-name { opacity: 0.75; font-size: 1.05rem; }
+    /* ─────────── 5.  Always‑on marquee ─────────── */
+    .marquee{position:relative;overflow:hidden}
+    .marquee>div{width:200%;height:100%;position:absolute;animation:marquee 9s linear infinite}
+    .marquee span{float:left;width:50%}
+    @keyframes marquee{0%{left:0}100%{left:-100%}}
 
-    /* ─────────── 5.  The always‑on marquee ─────────── */
-    .marquee { position: relative; overflow: hidden; }
-    .marquee > div { width: 200%; position: absolute; animation: marquee 9s linear infinite; }
-    .marquee span { float: left; width: 50%; }
-
-    @keyframes marquee { 0% { left: 0 } 100% { left: -100% } }
-
-    /* ─────────── 6.  Debug box (optional) ─────────── */
-    .debug-info { position: fixed; top: 10px; right: 10px; background: #000d; color: #fff; font: 11px monospace; padding: 10px; border-radius: 5px; max-width: 240px; z-index: 1001; }
+    /* ─────────── 6.  Debug overlay ─────────── */
+    .debug-info{position:fixed;top:10px;right:10px;background:#000d;color:#fff;font:11px monospace;padding:10px;border-radius:5px;max-width:240px;z-index:1001}
 
     /* ─────────── 7.  Mobile tweaks ─────────── */
-    @media (max-width: 600px) {
-      #sticky-player { padding: 8px; gap: 10px; }
-      #play-stop-btn { font-size: 1.5rem; }
-      #toggle-pos-btn{ font-size: 1.3rem; }
-      #artist-name   { font-size: 0.9rem; }
-    }
+    @media(max-width:600px){#sticky-player{padding:8px;gap:10px}#play-stop-btn{font-size:1.5rem}#toggle-pos-btn{font-size:1.3rem}#artist-name{font-size:.9rem}}
   </style>
 </head>
 <body>
@@ -88,8 +50,8 @@
   <div id="sticky-player" class="bottom">
     <!-- Play / Stop -->
     <button id="play-stop-btn" aria-label="Play">
-      <svg id="play-svg"  viewBox="0 0 38 38" fill="none"><circle cx="19" cy="19" r="17.5" stroke="currentColor" stroke-width="2"/><polygon points="15,12 28,19 15,26" fill="currentColor"/></svg>
-      <svg id="stop-svg"  viewBox="0 0 38 38" fill="none" style="display:none;"><circle cx="19" cy="19" r="17.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="10" height="10" fill="currentColor"/></svg>
+      <svg id="play-svg" viewBox="0 0 38 38" fill="none"><circle cx="19" cy="19" r="17.5" stroke="currentColor" stroke-width="2"/><polygon points="15,12 28,19 15,26" fill="currentColor"/></svg>
+      <svg id="stop-svg" viewBox="0 0 38 38" fill="none" style="display:none;"><circle cx="19" cy="19" r="17.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="10" height="10" fill="currentColor"/></svg>
       <svg id="loading-svg" viewBox="0 0 38 38" fill="none" style="display:none;"><circle cx="19" cy="19" r="17.5" stroke="currentColor" stroke-width="2" opacity="0.2"/><circle cx="19" cy="19" r="15" stroke="currentColor" stroke-width="3" stroke-dasharray="25,20" stroke-linecap="round" fill="none"><animateTransform attributeName="transform" type="rotate" from="0 19 19" to="360 19 19" dur="1s" repeatCount="indefinite"/></circle></svg>
     </button>
 
@@ -107,10 +69,10 @@
   <div id="debug-info" class="debug-info" style="display:none;">
     <div><strong>Debug Info</strong></div>
     <div>Updates: <span id="update-count">0</span></div>
-    <div>Last&nbsp;&nbsp;: <span id="last-update">-</span></div>
-    <div>Status : <span id="api-status">-</span></div>
-    <div>Raw    : <span id="raw-data">-</span></div>
-    <button style="margin-top:5px;font-size:10px;" onclick="debugInfo.style.display='none'">Hide</button>
+    <div>Last : <span id="last-update">-</span></div>
+    <div>Status: <span id="api-status">-</span></div>
+    <div>Raw : <span id="raw-data">-</span></div>
+    <button style="margin-top:5px;font-size:10px" onclick="debugInfo.style.display='none'">Hide</button>
   </div>
 
   <!-- Hidden audio element -->
@@ -118,112 +80,38 @@
 
   <script>
     /* ─────────── Config ─────────── */
-    const STREAM_URL = "https://listen.ramashamedia.com:8330/stream";
-    const SONG_API   = "/api/currentsong";
+    const STREAM_URL="https://listen.ramashamedia.com:8330/stream";
+    const SONG_API="/api/currentsong";
 
-    /* ─────────── DOM shorthands ─────────── */
-    const $ = id => document.getElementById(id);
-    const audio        = $("audio");
-    const playBtn      = $("play-stop-btn");
-    const playSvg      = $("play-svg");
-    const stopSvg      = $("stop-svg");
-    const loadingSvg   = $("loading-svg");
-    const songTitleEl  = $("song-title");
-    const artistNameEl = $("artist-name");
-    const stickyPlayer = $("sticky-player");
-    const toggleArrow  = $("toggle-arrow");
+    /* ─────────── DOM helpers ─────────── */
+    const $=id=>document.getElementById(id);
+    const audio=$("audio"),playBtn=$("play-stop-btn"),playSvg=$("play-svg"),stopSvg=$("stop-svg"),loadingSvg=$("loading-svg"),songTitleEl=$("song-title"),artistNameEl=$("artist-name"),sticky=$("sticky-player"),toggleArrow=$("toggle-arrow");
+    const debugInfo=$("debug-info"),updateCountEl=$("update-count"),lastUpdateEl=$("last-update"),apiStatusEl=$("api-status"),rawDataEl=$("raw-data");
 
-    const debugInfo    = $("debug-info");
-    const updateCountEl= $("update-count");
-    const lastUpdateEl = $("last-update");
-    const apiStatusEl  = $("api-status");
-    const rawDataEl    = $("raw-data");
+    let playing=false,updates=0;
 
-    let isPlaying   = false;
-    let updateCount = 0;
-
-    /* ─────────── Fetch helpers ─────────── */
-    async function fetchSong(){
-      const resp = await fetch(SONG_API + "?_=" + Date.now());
-      if(!resp.ok) throw new Error("Network error");
-      const data = await resp.json();
-      if(!data.success) throw new Error(data.error || "Unknown error");
-      return data;
-    }
+    /* ─────────── Networking ─────────── */
+    async function fetchSong(){const r=await fetch(SONG_API+"?_="+Date.now());if(!r.ok)throw new Error("network");const d=await r.json();if(!d.success)throw new Error(d.error||"api");return d;}
 
     /* ─────────── Marquee helpers ─────────── */
-    function startMarquee(el){
-      const txt = el.textContent || "";
-      el.innerHTML = `<div><span>${txt}</span><span>${txt}</span></div>`;
-    }
+    function marquee(el){const t=el.textContent||"";el.innerHTML=`<div><span>${t}</span><span>${t}</span></div>`;}
 
-    /* ─────────── Title / artist updater ─────────── */
-    async function updateSongInfo(){
-      updateCountEl.textContent = ++updateCount;
-      lastUpdateEl.textContent  = new Date().toLocaleTimeString();
-      apiStatusEl.textContent   = "Fetching…";
+    /* ─────────── Info updater ─────────── */
+    async function updateInfo(){updateCountEl.textContent=++updates;lastUpdateEl.textContent=new Date().toLocaleTimeString();apiStatusEl.textContent="...";
+      try{const d=await fetchSong();songTitleEl.textContent=d.title||"No track information";artistNameEl.textContent=d.artist||"Ramasha Media";marquee(songTitleEl);marquee(artistNameEl);apiStatusEl.textContent="ok";rawDataEl.textContent=(d.raw||"").slice(0,30)+"…";}catch(e){songTitleEl.textContent="Error";artistNameEl.textContent="";apiStatusEl.textContent=e.message;}}
 
-      try{
-        const data = await fetchSong();
-        songTitleEl.textContent  = data.title  || "No track information";
-        artistNameEl.textContent = data.artist || "Ramasha Media";
+    /* ─────────── Play / pause ─────────── */
+    playBtn.addEventListener("click",async()=>{if(playing){audio.pause();audio.src="";playing=false;playSvg.style.display="block";stopSvg.style.display="none";}else{try{playSvg.style.display="none";loadingSvg.style.display="block";audio.src=STREAM_URL;await audio.play();playing=true;loadingSvg.style.display="none";stopSvg.style.display="block";updateInfo();}catch(e){loadingSvg.style.display="none";playSvg.style.display="block";alert("Can't play:"+e.message);}}});
 
-        startMarquee(songTitleEl);
-        startMarquee(artistNameEl);
+    /* ─────────── Position toggle ─────────── */
+    $("toggle-pos-btn").addEventListener("click",()=>{const bottom=sticky.classList.toggle("bottom");sticky.classList.toggle("top",!bottom);toggleArrow.classList.toggle("bi-chevron-up",bottom);toggleArrow.classList.toggle("bi-chevron-down",!bottom);});
 
-        apiStatusEl.textContent = "OK";
-        rawDataEl.textContent   = (data.raw || "").slice(0,30) + "…";
-      }catch(err){
-        songTitleEl.textContent  = "Error";
-        artistNameEl.textContent = "";
-        apiStatusEl.textContent  = "Fail: " + err.message;
-      }
-    }
+    /* Triple‑click shows debug */
+    let c=0;document.addEventListener("click",()=>{c++;setTimeout(()=>c=0,400);if(c===3)debugInfo.style.display=debugInfo.style.display==="none"?"block":"none"});
 
-    /* ─────────── Play / stop logic ─────────── */
-    playBtn.addEventListener("click", async () => {
-      if(isPlaying){
-        audio.pause();
-        audio.src = "";
-        isPlaying = false;
-        playSvg.style.display = "block";
-        stopSvg.style.display = "none";
-      }else{
-        try{
-          playSvg.style.display = "none";
-          loadingSvg.style.display = "block";
+    window.addEventListener("resize",()=>{marquee(songTitleEl);marquee(artistNameEl)});
 
-          audio.src = STREAM_URL;
-          await audio.play();
-
-          isPlaying = true;
-          loadingSvg.style.display = "none";
-          stopSvg.style.display    = "block";
-          updateSongInfo();
-        }catch(e){
-          loadingSvg.style.display = "none";
-          playSvg.style.display    = "block";
-          alert("Cannot play: " + e.message);
-        }
-      }
-    });
-
-    /* ─────────── Other small UX bits ─────────── */
-    $("toggle-pos-btn").addEventListener("click", () => {
-      const atBottom = stickyPlayer.classList.toggle("bottom");
-      stickyPlayer.classList.toggle("top", !atBottom);
-      toggleArrow.classList.toggle("bi-chevron-up",   atBottom);
-      toggleArrow.classList.toggle("bi-chevron-down", !atBottom);
-    });
-
-    /* Triple‑click overlay */
-    let clicks=0; document.addEventListener("click",() => { clicks++; setTimeout(()=>clicks=0,400); if(clicks===3) debugInfo.style.display = debugInfo.style.display==="none"?"block":"none"; });
-
-    window.addEventListener("resize", () => { startMarquee(songTitleEl); startMarquee(artistNameEl); });
-
-    /* ─────────── Kick‑off ─────────── */
-    updateSongInfo();
-    setInterval(updateSongInfo, 10_000);
+    updateInfo();setInterval(updateInfo,10000);
   </script>
 </body>
 </html>

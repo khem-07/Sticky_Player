@@ -1,7 +1,7 @@
 // api/currentsong.js
 export default async function handler(req, res) {
-  const url = 'http://surilive.com:8330/currentsong?sid=1';
-  // const url = 'http://c.surilive.com:8270/currentsong?sid=1';
+  // const url = 'http://surilive.com:8330/currentsong?sid=1';
+  const url = 'http://c.surilive.com:8270/currentsong?sid=1';
   try {
     const response = await fetch(url);
     const text = await response.text();

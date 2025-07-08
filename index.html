@@ -4,9 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sticky Player</title>
-<!-- Google Fonts: Rancho and Poppins -->
 <link href="https://fonts.googleapis.com/css2?family=Rancho&family=Poppins:wght@400;700&display=swap" rel="stylesheet"/>
-<!-- Bootstrap Icons -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
 <style>
 :root {
@@ -67,39 +65,19 @@ body {
   flex-direction: column;
   gap: 2px;
 }
-
-/* New Marquee Styles - Your exact animation made smooth */
-.marquee {
-  height: 25px;
-  overflow: hidden;
+.marquee-outer {
   position: relative;
-  width: 100%;
-}
-.marquee div {
-  display: block;
-  width: 200%;
-  height: 30px;
-  position: absolute;
   overflow: hidden;
-  animation: marquee 5s linear infinite;
-  will-change: transform; /* GPU acceleration for smoothness */
+  width: 100%;
+  height: 1.8em;
+  display: flex;
+  align-items: center;
 }
-.marquee span {
-  float: left;
-  width: 50%;
-  font-family: 'Poppins', Arial, sans-serif;
-  font-weight: 400;
-  line-height: 1.25;
-  letter-spacing: 0.5px;
+.marquee-inner {
+  display: inline-block;
   white-space: nowrap;
-  box-sizing: border-box;
+  will-change: transform;
 }
-@keyframes marquee {
-  0% { left: 0; }
-  100% { left: -100%; }
-}
-
-/* Static text styles for when marquee is not needed */
 .static-text {
   font-family: 'Poppins', Arial, sans-serif;
   font-weight: 400;
@@ -108,36 +86,18 @@ body {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  display: block;
 }
-
-#song-title-container {
-  height: 25px;
-  display: flex;
-  align-items: center;
-}
-#song-title-container .static-text {
+#song-title-container .static-text,
+#song-title-container .marquee-inner {
   font-size: 1.3rem;
 }
-#song-title-container .marquee span {
-  font-size: 1.3rem;
-}
-
-#artist-name-container {
-  height: 25px;
-  display: flex;
-  align-items: center;
-}
-#artist-name-container .static-text {
+#artist-name-container .static-text,
+#artist-name-container .marquee-inner {
   font-size: 1.05rem;
   opacity: 0.85;
   letter-spacing: 0.2px;
 }
-#artist-name-container .marquee span {
-  font-size: 1.05rem;
-  opacity: 0.85;
-  letter-spacing: 0.2px;
-}
-
 #toggle-pos-btn {
   background: none;
   border: none;
@@ -160,26 +120,24 @@ body {
   #play-stop-btn { font-size: 1.5rem; margin-right: 10px; }
   #toggle-pos-btn { font-size: 1.3rem; margin-left: 8px; }
   #song-title-container .static-text,
-  #song-title-container .marquee span { font-size: 1.05rem; }
+  #song-title-container .marquee-inner { font-size: 1.05rem; }
   #artist-name-container .static-text,
-  #artist-name-container .marquee span { font-size: 0.93rem; }
+  #artist-name-container .marquee-inner { font-size: 0.93rem; }
+  .marquee-outer { height: 1.5em; }
 }
 </style>
 </head>
 <body>
 <div id="sticky-player" class="bottom">
   <button id="play-stop-btn" aria-label="Play">
-    <!-- Slim Play SVG (visible by default) -->
     <svg id="play-svg" viewBox="0 0 38 38" fill="none">
       <circle cx="19" cy="19" r="17.5" stroke="currentColor" stroke-width="2"/>
       <polygon points="15,12 28,19 15,26" fill="currentColor"/>
     </svg>
-    <!-- Slim Stop SVG (hidden by default) -->
     <svg id="stop-svg" viewBox="0 0 38 38" fill="none" style="display:none;">
       <circle cx="19" cy="19" r="17.5" stroke="currentColor" stroke-width="2"/>
       <rect x="14" y="14" width="10" height="10" fill="currentColor"/>
     </svg>
-    <!-- Slim Loading SVG (hidden by default) -->
     <svg id="loading-svg" viewBox="0 0 38 38" fill="none" style="display:none;">
       <circle cx="19" cy="19" r="17.5" stroke="currentColor" stroke-width="2" opacity="0.2"/>
       <circle cx="19" cy="19" r="15" stroke="currentColor" stroke-width="3" stroke-dasharray="25, 20" stroke-linecap="round" fill="none">
@@ -188,10 +146,10 @@ body {
     </svg>
   </button>
   <div id="song-info">
-    <div id="artist-name-container">
+    <div id="artist-name-container" class="marquee-outer">
       <div class="static-text">Ramasha Media</div>
     </div>
-    <div id="song-title-container">
+    <div id="song-title-container" class="marquee-outer">
       <div class="static-text">Loading...</div>
     </div>
   </div>
@@ -199,12 +157,11 @@ body {
     <i class="bi bi-chevron-up" id="toggle-arrow"></i>
   </button>
 </div>
-
 <audio id="audio" preload="none"></audio>
-
+<!-- Only replace the script block below, keep the rest as is -->
 <script>
 const STREAM_URL = "https://listen.ramashamedia.com:8330/stream";
-const SONG_API_URL = "http://c.surilive.com:8270/currentsong?sid=1";
+const SONG_API_URL = "http://c.surilive.com:8270/currentsong?sid=1"; // try https if available
 
 const audio        = document.getElementById("audio");
 const playBtn      = document.getElementById("play-stop-btn");
@@ -219,175 +176,115 @@ const toggleArrow  = document.getElementById("toggle-arrow");
 
 let isPlaying   = false;
 
-// --- Multiple CORS Proxies for better reliability ---
+// --- CORS Proxies ---
 async function fetchSongTitle () {
   const proxies = [
     'https://api.allorigins.win/get?url=',
     'https://corsproxy.io/?',
-    'https://cors-anywhere.herokuapp.com/',
     'https://api.codetabs.com/v1/proxy?quest='
   ];
-  
   for (let i = 0; i < proxies.length; i++) {
     try {
       const proxyUrl = proxies[i];
       const targetUrl = encodeURIComponent(SONG_API_URL + '&_=' + Date.now());
       let fetchUrl;
-      
-      if (proxyUrl.includes('allorigins.win')) {
-        fetchUrl = proxyUrl + targetUrl;
-      } else if (proxyUrl.includes('codetabs.com')) {
+      if (proxyUrl.includes('allorigins.win') || proxyUrl.includes('codetabs.com')) {
         fetchUrl = proxyUrl + targetUrl;
       } else {
         fetchUrl = proxyUrl + SONG_API_URL + '&_=' + Date.now();
       }
-      
-      const resp = await fetch(fetchUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json, text/plain, */*',
-        }
-      });
-
+      const resp = await fetch(fetchUrl, { headers: { 'Accept': 'application/json, text/plain, */*' } });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-
       let responseText;
-      if (proxyUrl.includes('allorigins.win')) {
+      if (proxyUrl.includes('allorigins.win') || proxyUrl.includes('codetabs.com')) {
         const data = await resp.json();
-        responseText = data.contents;
-      } else if (proxyUrl.includes('codetabs.com')) {
-        const data = await resp.json();
-        responseText = data.contents || await resp.text();
+        responseText = data.contents || '';
       } else {
         responseText = await resp.text();
       }
-      
       const trimmed = responseText.trim();
-
       if (!trimmed || trimmed.toLowerCase() === "error" || trimmed.toLowerCase() === "no stream found") {
         throw new Error("No Title.");
       }
-
       let artist = "Ramasha Media", title = trimmed;
       if (trimmed.includes(" - ")) {
         [artist, title] = trimmed.split(" - ", 2);
       }
-      
-      // Ensure we always have values
-      artist = artist.trim() || "Ramasha Media";
-      title = title.trim() || "Unknown Track";
-      
-      console.log(`Successfully fetched via ${proxyUrl}`);
-      return { success: true, artist, title, raw: trimmed };
-      
+      return { success: true, artist: artist.trim(), title: title.trim(), raw: trimmed };
     } catch (e) {
-      console.warn(`Proxy ${proxies[i]} failed:`, e.message);
       if (i === proxies.length - 1) {
-        // Last proxy failed
-        return { 
-          success: false, 
-          artist: "Ramasha Media", 
-          title: "Error Loading.", 
-          raw: "", 
-          error: "All proxies failed" 
-        };
+        return { success: false, artist: "Ramasha Media", title: "Error Loading.", raw: "", error: "All proxies failed" };
       }
-      // Continue to next proxy
     }
   }
 }
 
-function createMarqueeElement(text, container) {
-  const marquee = document.createElement('div');
-  marquee.className = 'marquee';
-  
-  const marqueeInner = document.createElement('div');
-  
-  const span1 = document.createElement('span');
-  span1.textContent = text + '       '; // Add spaces for gap
-  
-  const span2 = document.createElement('span');
-  span2.textContent = text + '       '; // Add spaces for gap
-  
-  marqueeInner.appendChild(span1);
-  marqueeInner.appendChild(span2);
-  marquee.appendChild(marqueeInner);
-  
+// --- Marquee Logic ---
+function setTextOrMarquee(container, text, fontSize) {
   container.innerHTML = '';
-  container.appendChild(marquee);
-}
+  const textWidth = getTextWidth(text, fontSize);
+  const containerWidth = container.clientWidth || 180;
+  let gapPx = 60;
+  if (window.innerWidth <= 600) gapPx = 80; // more gap for mobile
 
-function createStaticElement(text, container) {
-  const staticEl = document.createElement('div');
-  staticEl.className = 'static-text';
-  staticEl.textContent = text;
-  
-  container.innerHTML = '';
-  container.appendChild(staticEl);
-}
+  if (textWidth > containerWidth) {
+    const inner = document.createElement('div');
+    inner.className = 'marquee-inner';
+    inner.style.fontSize = fontSize;
 
-function applyMarquee() {
-  requestAnimationFrame(() => {
-    // Handle song title
-    const titleText = songTitleContainer.querySelector('.static-text, .marquee span')?.textContent || 'Loading...';
-    const titleWidth = getTextWidth(titleText, '1.3rem');
-    const titleContainerWidth = songTitleContainer.clientWidth;
-    
-    if (titleWidth > titleContainerWidth) {
-      createMarqueeElement(titleText, songTitleContainer);
-    } else {
-      createStaticElement(titleText, songTitleContainer);
+    const span1 = document.createElement('span');
+    span1.textContent = text;
+    const gapSpan = document.createElement('span');
+    gapSpan.style.display = 'inline-block';
+    gapSpan.style.width = gapPx + 'px';
+    gapSpan.textContent = '\u00A0';
+
+    const span2 = span1.cloneNode(true);
+
+    inner.appendChild(span1);
+    inner.appendChild(gapSpan);
+    inner.appendChild(span2);
+    inner.appendChild(gapSpan.cloneNode(true));
+
+    // Animation duration: 40px/sec
+    const scrollDistance = textWidth + gapPx;
+    const speed = 40;
+    const duration = scrollDistance / speed;
+    inner.style.animation = `marquee-scroll ${duration}s linear infinite`;
+
+    container.appendChild(inner);
+
+    // Add dynamic keyframes if not present
+    if (!document.getElementById('marquee-keyframes')) {
+      const style = document.createElement('style');
+      style.id = 'marquee-keyframes';
+      style.textContent = `
+      @keyframes marquee-scroll {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-${scrollDistance}px); }
+      }`;
+      document.head.appendChild(style);
     }
-    
-    // Handle artist name
-    const artistText = artistNameContainer.querySelector('.static-text, .marquee span')?.textContent || 'Ramasha Media';
-    const artistWidth = getTextWidth(artistText, '1.05rem');
-    const artistContainerWidth = artistNameContainer.clientWidth;
-    
-    if (artistWidth > artistContainerWidth) {
-      createMarqueeElement(artistText, artistNameContainer);
-    } else {
-      createStaticElement(artistText, artistNameContainer);
-    }
-  });
+  } else {
+    const staticEl = document.createElement('div');
+    staticEl.className = 'static-text';
+    staticEl.style.fontSize = fontSize;
+    staticEl.textContent = text;
+    container.appendChild(staticEl);
+  }
 }
-
 function getTextWidth(text, fontSize) {
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('2d');
+  const canvas = getTextWidth.canvas || (getTextWidth.canvas = document.createElement("canvas"));
+  const context = canvas.getContext("2d");
   context.font = `${fontSize} Poppins, Arial, sans-serif`;
   return context.measureText(text).width;
 }
 
+// --- Update Song Info ---
 async function updateSongInfo () {
-  try {
-    const data = await fetchSongTitle();
-    
-    // Always update with the fetched data, even if there's an error
-    const titleText = data.title || "No Title Available";
-    const artistText = data.artist || "Ramasha Media";
-    
-    // Update the current elements first
-    const currentTitle = songTitleContainer.querySelector('.static-text, .marquee span');
-    const currentArtist = artistNameContainer.querySelector('.static-text, .marquee span');
-    
-    if (currentTitle) currentTitle.textContent = titleText;
-    if (currentArtist) currentArtist.textContent = artistText;
-    
-    // Then apply marquee logic
-    applyMarquee();
-    
-  } catch (err) {
-    console.error('Error updating song info:', err);
-    // Fallback values
-    const currentTitle = songTitleContainer.querySelector('.static-text, .marquee span');
-    const currentArtist = artistNameContainer.querySelector('.static-text, .marquee span');
-    
-    if (currentTitle) currentTitle.textContent = "Error Loading";
-    if (currentArtist) currentArtist.textContent = "Ramasha Media";
-    
-    applyMarquee();
-  }
+  const data = await fetchSongTitle();
+  setTextOrMarquee(songTitleContainer, data.title || "No Title", window.innerWidth <= 600 ? "1.05rem" : "1.3rem");
+  setTextOrMarquee(artistNameContainer, data.artist || "Ramasha Media", window.innerWidth <= 600 ? "0.93rem" : "1.05rem");
 }
 
 playBtn.addEventListener("click", async () => {
@@ -403,14 +300,11 @@ playBtn.addEventListener("click", async () => {
       playSvg.style.display    = "none";
       stopSvg.style.display    = "none";
       loadingSvg.style.display = "block";
-
       audio.src = STREAM_URL;
       await audio.play();
-
       isPlaying = true;
       loadingSvg.style.display = "none";
       stopSvg.style.display    = "block";
-
       updateSongInfo();
     } catch (e) {
       isPlaying = false;
@@ -421,7 +315,6 @@ playBtn.addEventListener("click", async () => {
     }
   }
 });
-
 audio.addEventListener("play",  updateSongInfo);
 audio.addEventListener("ended", () => {
   isPlaying = false;
@@ -443,21 +336,16 @@ audio.addEventListener("error", () => {
   stopSvg.style.display = "none";
   loadingSvg.style.display = "none";
 });
-
 togglePosBtn.addEventListener("click", () => {
   const isBottom = stickyPlayer.classList.toggle("bottom");
   stickyPlayer.classList.toggle("top", !isBottom);
-
   toggleArrow.classList.toggle("bi-chevron-up",   isBottom);
   toggleArrow.classList.toggle("bi-chevron-down", !isBottom);
-  setTimeout(applyMarquee, 100);
+  setTimeout(updateSongInfo, 100);
 });
-
 window.addEventListener('resize', () => {
-  setTimeout(applyMarquee, 100);
+  setTimeout(updateSongInfo, 100);
 });
-
-// Initialize
 updateSongInfo();
 setInterval(updateSongInfo, 10000);
 </script>

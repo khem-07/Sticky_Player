@@ -19,111 +19,71 @@ body {
 }
 #sticky-player {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--bg-color);
-  color: var(--text-color);
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  z-index: 1000;
+  left: 0; right: 0; bottom: 0;
+  background: var(--bg-color); color: var(--text-color);
+  display: flex; align-items: center;
+  padding: 12px 16px; z-index: 1000;
   box-shadow: 0 0 10px #0002;
   transition: top 0.3s, bottom 0.3s;
-  font-family: 'Poppins', Arial, sans-serif;
   overflow: hidden;
 }
-#sticky-player.top {
-  top: 0;
-  bottom: auto;
-}
-#sticky-player.bottom {
-  bottom: 0;
-  top: auto;
-}
+#sticky-player.top { top: 0; bottom: auto; }
+#sticky-player.bottom { bottom: 0; top: auto; }
 #play-stop-btn {
-  background: none;
-  border: none;
-  color: var(--play-btn-color);
-  font-size: 2.2rem;
-  margin-right: 16px;
-  cursor: pointer;
-  outline: none;
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
+  background: none; border: none; color: var(--play-btn-color);
+  font-size: 2.2rem; margin-right: 16px; cursor: pointer;
+  outline: none; display: flex; align-items: center; flex-shrink: 0;
 }
-#play-stop-btn svg {
-  width: 3.2rem;
-  height: 3.2rem;
-  display: block;
-}
+#play-stop-btn svg { width: 3.2rem; height: 3.2rem; display: block; }
 #song-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;
 }
-.marquee-outer {
+.marquee-mask {
   position: relative;
+  width: 100%; height: 1.7em;
   overflow: hidden;
-  width: 100%;
-  height: 1.8em;
-  display: flex;
-  align-items: center;
+  display: flex; align-items: center;
 }
-.marquee-inner {
+.marquee-slot {
+  position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+  display: flex; align-items: center;
+  opacity: 0;
+  transition: opacity 1s;
+  white-space: nowrap; overflow: hidden;
+  pointer-events: none;
+}
+.marquee-slot.active { opacity: 1; pointer-events: auto; }
+.marquee-text {
   display: inline-block;
-  white-space: nowrap;
-  will-change: transform;
-}
-.static-text {
+  padding-right: 5px;
+  transform: translateX(100%);
   font-family: 'Poppins', Arial, sans-serif;
   font-weight: 400;
-  line-height: 1.25;
-  letter-spacing: 0.5px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  display: block;
-}
-#song-title-container .static-text,
-#song-title-container .marquee-inner {
   font-size: 1.3rem;
+  letter-spacing: 0.5px;
+  line-height: 1.25;
+  white-space: nowrap;
 }
-#artist-name-container .static-text,
-#artist-name-container .marquee-inner {
-  font-size: 1.05rem;
-  opacity: 0.85;
-  letter-spacing: 0.2px;
+.marquee-slot.artist .marquee-text { font-size: 1.05rem; opacity: 0.75; letter-spacing: 0.2px; }
+.marquee-slot.marquee .marquee-text { animation: sticky-marquee linear infinite; }
+@keyframes sticky-marquee {
+  0% { transform: translateX(100%);}
+  100% { transform: translateX(-100%);}
 }
 #toggle-pos-btn {
-  background: none;
-  border: none;
-  color: var(--play-btn-color);
-  font-size: 1.7rem;
-  margin-left: 16px;
-  cursor: pointer;
-  outline: none;
-  display: flex;
-  align-items: center;
+  background: none; border: none; color: var(--play-btn-color);
+  font-size: 1.7rem; margin-left: 16px; cursor: pointer;
+  outline: none; display: flex; align-items: center; flex-shrink: 0;
   transition: transform 0.2s;
-  flex-shrink: 0;
 }
-#toggle-arrow {
-  opacity: 0.7;
-  font-weight: 400;
-}
+#toggle-arrow { opacity: 0.7; font-weight: 400; }
 @media (max-width: 600px) {
   #sticky-player { padding: 8px 8px; }
   #play-stop-btn { font-size: 1.5rem; margin-right: 10px; }
   #toggle-pos-btn { font-size: 1.3rem; margin-left: 8px; }
-  #song-title-container .static-text,
-  #song-title-container .marquee-inner { font-size: 1.05rem; }
-  #artist-name-container .static-text,
-  #artist-name-container .marquee-inner { font-size: 0.93rem; }
-  .marquee-outer { height: 1.5em; }
+  .marquee-text { font-size: 1.05rem; }
+  .marquee-slot.artist .marquee-text { font-size: 0.93rem; }
+  .marquee-mask { height: 1.5em; }
 }
 </style>
 </head>
@@ -146,11 +106,13 @@ body {
     </svg>
   </button>
   <div id="song-info">
-    <div id="artist-name-container" class="marquee-outer">
-      <div class="static-text">Ramasha Media</div>
+    <div class="marquee-mask">
+      <span class="marquee-slot artist active" id="artistSlotA"><span class="marquee-text"></span></span>
+      <span class="marquee-slot artist" id="artistSlotB"><span class="marquee-text"></span></span>
     </div>
-    <div id="song-title-container" class="marquee-outer">
-      <div class="static-text">Loading...</div>
+    <div class="marquee-mask">
+      <span class="marquee-slot title active" id="titleSlotA"><span class="marquee-text"></span></span>
+      <span class="marquee-slot title" id="titleSlotB"><span class="marquee-text"></span></span>
     </div>
   </div>
   <button id="toggle-pos-btn" aria-label="Toggle position">
@@ -158,133 +120,120 @@ body {
   </button>
 </div>
 <audio id="audio" preload="none"></audio>
-<!-- Only replace the script block below, keep the rest as is -->
 <script>
 const STREAM_URL = "https://listen.ramashamedia.com:8330/stream";
-const SONG_API_URL = "https://surilive.com:8000/currentsong?sid=1"; 
+const SONG_API = "/api/currentsong";
+const fadeDuration = 1000;
 
 const audio        = document.getElementById("audio");
 const playBtn      = document.getElementById("play-stop-btn");
 const playSvg      = document.getElementById("play-svg");
 const stopSvg      = document.getElementById("stop-svg");
 const loadingSvg   = document.getElementById("loading-svg");
-const songTitleContainer = document.getElementById("song-title-container");
-const artistNameContainer = document.getElementById("artist-name-container");
 const stickyPlayer = document.getElementById("sticky-player");
 const togglePosBtn = document.getElementById("toggle-pos-btn");
 const toggleArrow  = document.getElementById("toggle-arrow");
 
-let isPlaying   = false;
+// Artist/Title slots for crossfade
+const artistSlotA = document.getElementById("artistSlotA");
+const artistSlotB = document.getElementById("artistSlotB");
+const titleSlotA  = document.getElementById("titleSlotA");
+const titleSlotB  = document.getElementById("titleSlotB");
+const artistTextA = artistSlotA.querySelector('.marquee-text');
+const artistTextB = artistSlotB.querySelector('.marquee-text');
+const titleTextA  = titleSlotA.querySelector('.marquee-text');
+const titleTextB  = titleSlotB.querySelector('.marquee-text');
 
-// --- CORS Proxies ---
-async function fetchSongTitle () {
-  const proxies = [
-    'https://api.allorigins.win/get?url=',
-    'https://corsproxy.io/?',
-    'https://api.codetabs.com/v1/proxy?quest='
-  ];
-  for (let i = 0; i < proxies.length; i++) {
-    try {
-      const proxyUrl = proxies[i];
-      const targetUrl = encodeURIComponent(SONG_API_URL + '&_=' + Date.now());
-      let fetchUrl;
-      if (proxyUrl.includes('allorigins.win') || proxyUrl.includes('codetabs.com')) {
-        fetchUrl = proxyUrl + targetUrl;
-      } else {
-        fetchUrl = proxyUrl + SONG_API_URL + '&_=' + Date.now();
-      }
-      const resp = await fetch(fetchUrl, { headers: { 'Accept': 'application/json, text/plain, */*' } });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      let responseText;
-      if (proxyUrl.includes('allorigins.win') || proxyUrl.includes('codetabs.com')) {
-        const data = await resp.json();
-        responseText = data.contents || '';
-      } else {
-        responseText = await resp.text();
-      }
-      const trimmed = responseText.trim();
-      if (!trimmed || trimmed.toLowerCase() === "error" || trimmed.toLowerCase() === "no stream found") {
-        throw new Error("No Title.");
-      }
-      let artist = "Ramasha Media", title = trimmed;
-      if (trimmed.includes(" - ")) {
-        [artist, title] = trimmed.split(" - ", 2);
-      }
-      return { success: true, artist: artist.trim(), title: title.trim(), raw: trimmed };
-    } catch (e) {
-      if (i === proxies.length - 1) {
-        return { success: false, artist: "Ramasha Media", title: "Error Loading.", raw: "", error: "All proxies failed" };
-      }
-    }
-  }
-}
+let activeArtistSlot = artistSlotA, nextArtistSlot = artistSlotB;
+let activeArtistText = artistTextA, nextArtistText = artistTextB;
+let activeTitleSlot  = titleSlotA, nextTitleSlot  = titleSlotB;
+let activeTitleText  = titleTextA, nextTitleText  = titleTextB;
 
-// --- Marquee Logic ---
-function setTextOrMarquee(container, text, fontSize) {
-  container.innerHTML = '';
-  const textWidth = getTextWidth(text, fontSize);
-  const containerWidth = container.clientWidth || 180;
-  let gapPx = 60;
-  if (window.innerWidth <= 600) gapPx = 80; // more gap for mobile
+let isPlaying = false;
 
-  if (textWidth > containerWidth) {
-    const inner = document.createElement('div');
-    inner.className = 'marquee-inner';
-    inner.style.fontSize = fontSize;
+function checkAndApplyMarquee(slot, textSpan) {
+  slot.classList.remove('marquee');
+  textSpan.style.animationDuration = '';
+  textSpan.style.transform = 'translateX(100%)';
 
-    const span1 = document.createElement('span');
-    span1.textContent = text;
-    const gapSpan = document.createElement('span');
-    gapSpan.style.display = 'inline-block';
-    gapSpan.style.width = gapPx + 'px';
-    gapSpan.textContent = '\u00A0';
-
-    const span2 = span1.cloneNode(true);
-
-    inner.appendChild(span1);
-    inner.appendChild(gapSpan);
-    inner.appendChild(span2);
-    inner.appendChild(gapSpan.cloneNode(true));
-
-    // Animation duration: 40px/sec
-    const scrollDistance = textWidth + gapPx;
-    const speed = 40;
-    const duration = scrollDistance / speed;
-    inner.style.animation = `marquee-scroll ${duration}s linear infinite`;
-
-    container.appendChild(inner);
-
-    // Add dynamic keyframes if not present
-    if (!document.getElementById('marquee-keyframes')) {
-      const style = document.createElement('style');
-      style.id = 'marquee-keyframes';
-      style.textContent = `
-      @keyframes marquee-scroll {
-        0% { transform: translateX(0); }
-        100% { transform: translateX(-${scrollDistance}px); }
-      }`;
-      document.head.appendChild(style);
-    }
+  const slotWidth = slot.offsetWidth;
+  const textWidth = textSpan.scrollWidth;
+  if (textWidth > slotWidth + 2) {
+    slot.classList.add('marquee');
+    const duration = (slotWidth + textWidth) * 0.02;
+    textSpan.style.animationDuration = `${duration}s`;
   } else {
-    const staticEl = document.createElement('div');
-    staticEl.className = 'static-text';
-    staticEl.style.fontSize = fontSize;
-    staticEl.textContent = text;
-    container.appendChild(staticEl);
+    textSpan.style.transform = 'translateX(0)';
   }
 }
-function getTextWidth(text, fontSize) {
-  const canvas = getTextWidth.canvas || (getTextWidth.canvas = document.createElement("canvas"));
-  const context = canvas.getContext("2d");
-  context.font = `${fontSize} Poppins, Arial, sans-serif`;
-  return context.measureText(text).width;
+
+function setInitialLoading() {
+  activeArtistText.textContent = 'Ramasha Media';
+  activeTitleText.textContent = 'Loading...';
+  activeArtistSlot.classList.add('active');
+  nextArtistSlot.classList.remove('active');
+  activeTitleSlot.classList.add('active');
+  nextTitleSlot.classList.remove('active');
+  checkAndApplyMarquee(activeArtistSlot, activeArtistText);
+  checkAndApplyMarquee(activeTitleSlot, activeTitleText);
 }
 
-// --- Update Song Info ---
-async function updateSongInfo () {
-  const data = await fetchSongTitle();
-  setTextOrMarquee(songTitleContainer, data.title || "No Title", window.innerWidth <= 600 ? "1.05rem" : "1.3rem");
-  setTextOrMarquee(artistNameContainer, data.artist || "Ramasha Media", window.innerWidth <= 600 ? "0.93rem" : "1.05rem");
+async function fetchSongInfo() {
+  try {
+    const resp = await fetch(SONG_API + '?_=' + Date.now());
+    if (!resp.ok) throw new Error("Error Loading.");
+    const data = await resp.json();
+    if (!data.success) throw new Error(data.error || "No Title.");
+    return data;
+  } catch (error) {
+    return { artist: "", title: "Error Loading.", error: true };
+  }
+}
+
+async function updateSongInfo() {
+  const data = await fetchSongInfo();
+
+  // --- Artist crossfade ---
+  const newArtist = data.artist || "Ramasha Media";
+  if (nextArtistText.textContent !== newArtist) {
+    nextArtistText.textContent = newArtist;
+    checkAndApplyMarquee(nextArtistSlot, nextArtistText);
+    activeArtistSlot.classList.remove('active');
+    nextArtistSlot.classList.add('active');
+    setTimeout(() => {
+      activeArtistText.textContent = '';
+      activeArtistSlot.classList.remove('marquee');
+      activeArtistText.style.animationDuration = '';
+      activeArtistText.style.transform = 'translateX(0)';
+      let tmp = activeArtistSlot;
+      activeArtistSlot = nextArtistSlot;
+      nextArtistSlot = tmp;
+      let tmpT = activeArtistText;
+      activeArtistText = nextArtistText;
+      nextArtistText = tmpT;
+    }, fadeDuration);
+  }
+
+  // --- Title crossfade ---
+  const newTitle = data.title || "No Title.";
+  if (nextTitleText.textContent !== newTitle) {
+    nextTitleText.textContent = newTitle;
+    checkAndApplyMarquee(nextTitleSlot, nextTitleText);
+    activeTitleSlot.classList.remove('active');
+    nextTitleSlot.classList.add('active');
+    setTimeout(() => {
+      activeTitleText.textContent = '';
+      activeTitleSlot.classList.remove('marquee');
+      activeTitleText.style.animationDuration = '';
+      activeTitleText.style.transform = 'translateX(0)';
+      let tmp = activeTitleSlot;
+      activeTitleSlot = nextTitleSlot;
+      nextTitleSlot = tmp;
+      let tmpT = activeTitleText;
+      activeTitleText = nextTitleText;
+      nextTitleText = tmpT;
+    }, fadeDuration);
+  }
 }
 
 playBtn.addEventListener("click", async () => {
@@ -341,11 +290,18 @@ togglePosBtn.addEventListener("click", () => {
   stickyPlayer.classList.toggle("top", !isBottom);
   toggleArrow.classList.toggle("bi-chevron-up",   isBottom);
   toggleArrow.classList.toggle("bi-chevron-down", !isBottom);
-  setTimeout(updateSongInfo, 100);
+  setTimeout(() => {
+    checkAndApplyMarquee(activeArtistSlot, activeArtistText);
+    checkAndApplyMarquee(activeTitleSlot, activeTitleText);
+  }, 100);
 });
 window.addEventListener('resize', () => {
-  setTimeout(updateSongInfo, 100);
+  setTimeout(() => {
+    checkAndApplyMarquee(activeArtistSlot, activeArtistText);
+    checkAndApplyMarquee(activeTitleSlot, activeTitleText);
+  }, 100);
 });
+setInitialLoading();
 updateSongInfo();
 setInterval(updateSongInfo, 10000);
 </script>
